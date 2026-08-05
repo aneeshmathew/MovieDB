@@ -9,7 +9,9 @@ const envSchema = z.object({
   JWT_ACCESS_EXPIRES: z.string().default("15m"),
   JWT_REFRESH_SECRET: z.string().min(16, "JWT_REFRESH_SECRET should be a long random string"),
   JWT_REFRESH_EXPIRES: z.string().default("7d"),
-  TMDB_API_KEY: z.string().optional().default(""),
+  // TMDB v4 read access token (Bearer), NOT the v3 api_key — sent as an
+  // Authorization header rather than a URL query param.
+  TMDB_ACCESS_TOKEN: z.string().optional().default(""),
 });
 
 const parsed = envSchema.safeParse(process.env);

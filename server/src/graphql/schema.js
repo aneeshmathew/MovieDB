@@ -1,8 +1,14 @@
-const typeDefs = require("./typeDefs");
-const authResolvers = require("./resolvers/auth.resolvers");
+const { mergeTypeDefs, mergeResolvers } = require("@graphql-tools/merge");
 
-// Later phases add their own resolver modules here (movies, watchlist,
-// favorites, ratings, preferences) and get merged in the same way.
-const resolvers = authResolvers;
+const authTypeDefs = require("./typeDefs/auth.typeDefs");
+const moviesTypeDefs = require("./typeDefs/movies.typeDefs");
+
+const authResolvers = require("./resolvers/auth.resolvers");
+const moviesResolvers = require("./resolvers/movies.resolvers");
+
+// Later phases (watchlist, favorites, ratings, preferences) add their own
+// typeDefs/resolvers modules and get appended to these two arrays.
+const typeDefs = mergeTypeDefs([authTypeDefs, moviesTypeDefs]);
+const resolvers = mergeResolvers([authResolvers, moviesResolvers]);
 
 module.exports = { typeDefs, resolvers };

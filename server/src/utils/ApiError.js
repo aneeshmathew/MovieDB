@@ -25,6 +25,10 @@ class ApiError extends Error {
   static conflict(message, code = "CONFLICT") {
     return new ApiError(message, 409, code);
   }
+
+  static badGateway(message = "Upstream service error", code = "UPSTREAM_ERROR") {
+    return new ApiError(message, 502, code);
+  }
 }
 
 module.exports = ApiError;
