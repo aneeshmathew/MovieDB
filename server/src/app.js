@@ -9,6 +9,7 @@ const env = require("./config/env");
 const { typeDefs, resolvers } = require("./graphql/schema");
 const { getUserFromRequest } = require("./middleware/auth.middleware");
 const { errorHandler } = require("./middleware/errorHandler");
+const movieOgRoute = require("./routes/movieOg.route");
 const ApiError = require("./utils/ApiError");
 
 async function createApp() {
@@ -19,6 +20,26 @@ async function createApp() {
 
   // Health check — plain REST, useful for Render/Railway uptime checks.
   app.get("/health", (_req, res) => res.json({ status: "ok" }));
+
+  // Serves an Open Graph HTML shell to link-preview crawlers (Slack,
+  // Twitter, iMessage, etc.) hitting /movies/:tmdbId; calls next() for
+  // everyone else. IMPORTANT: this only intercepts crawler traffic that
+  // actually reaches THIS server. If the frontend and backend are deployed
+  // on separate origins (e.g. Vercel + Render, per the original stack
+  // table), a crawler hitting the Vercel domain never reaches this route —
+  // you'd need either (a) a platform-level rewrite forwarding bot user
+  // agents to this backend, or (b) serve the built SPA from this same
+  // Express app instead of a separate static host. See README §Phase 5.
+  app.use(movieOgRoute);
+
+  // Once the frontend is built, real (non-crawler) requests to /movies/:tmdbId
+  // and other client routes fall through to here — serve the SPA's static
+  // build with a history-fallback for client-side routing, e.g.:
+  //
+  //   app.use(express.static(path.join(__dirname, "../../client/dist")));
+  //   app.get("*", (req, res) => res.sendFile(path.join(__dirname, "../../client/dist/index.html")));
+  //
+  // Left commented out until the client/ build actually exists.
 
   const apolloServer = new ApolloServer({
     typeDefs,

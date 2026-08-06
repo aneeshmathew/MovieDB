@@ -1,9 +1,38 @@
-# MovieDB Server — Phases 1-4: Foundation through Ratings & Preferences
+# MovieDB Server — Phases 1-5 (backend): Foundation through OG Link Previews
 
-Express + Apollo Server (GraphQL) + MongoDB backend. Auth, TMDB-backed browsing, watchlist/favorites,
-and now ratings + preferences are all covered here (see `moviedb-plan-v3.md` for the full plan).
+Express + Apollo Server (GraphQL) + MongoDB backend. Auth, TMDB-backed browsing,
+watchlist/favorites, ratings/preferences, and now the OG-preview crawler route are all
+covered here (see `moviedb-plan-v3.md` for the full plan, including the frontend work
+that makes up the rest of Phase 5).
 
-## Phase 4 — Ratings & Preferences
+## Phase 5 (backend) — OG Link Previews
+- **`GET /movies/:tmdbId`** (`src/routes/movieOg.route.js`) — detects social/link-preview
+  crawlers (Slack, Twitter, Discord, WhatsApp, LinkedIn, etc.) by `User-Agent` and serves a
+  minimal server-rendered HTML shell with Open Graph + Twitter Card meta tags. Everyone else
+  (`isCrawler()` returns false) falls through via `next()`.
+- **`ogCrawler.middleware.js`** — pure `isCrawler`/`renderOgHtml`/`escapeHtml`/`truncate`
+  functions, unit tested independently of the route. All movie title/overview text is
+  HTML-escaped before interpolation — TMDB data can contain quotes/angle brackets, and this
+  route has no other input sanitization layer in front of it.
+- Falls through (not a 500) on invalid `tmdbId` or a failed movie lookup, so a crawler always
+  gets *something* rather than an error page.
+
+**⚠️ Same-origin requirement:** this route only intercepts crawler traffic that reaches
+*this* server. If the frontend and backend are deployed on separate origins (e.g. Vercel for
+the frontend + Render for this backend, per the original stack table), a crawler hitting the
+Vercel domain **never reaches this route** — the meta tags would silently never appear in
+link previews. To make this actually work in production, either:
+1. Serve the built frontend (`client/dist`) from this same Express app instead of a separate
+   static host (uncomment the static-serving block in `app.js`), or
+2. Add a platform-level rewrite (e.g. a Vercel rewrite matching known bot user agents) that
+   forwards those specific requests to this backend's `/movies/:tmdbId` route.
+
+This is flagged rather than silently built as if it "just works," since it's the kind of gap
+that's invisible until someone actually pastes a link into Slack and gets no preview.
+
+## What's here (Phases 1-4, unchanged)
+
+### Phase 4 — Ratings & Preferences
 - **`Rating` model** — one rating per user per movie, enforced by a unique `(userId, movieId)` compound index
 - **`upsertRating(movieId, score, review?)` / `deleteRating(movieId)`** mutations + **`rating(movieId)`** query (current user's own rating)
   - Community `Movie.avgRating`/`ratingCount` are **recomputed from the Rating collection** after every upsert/delete (an aggregate `$avg`/`$sum`), rather than incremented/decremented in place — the Rating collection stays the single source of truth, avoiding drift
@@ -13,14 +42,12 @@ and now ratings + preferences are all covered here (see `moviedb-plan-v3.md` for
 - **Dashboard personalization**: `dashboard` now checks `context.user` and, if logged in, reorders each section so movies matching the user's `preferences.genres` move to the front (stable partition — relative order preserved within each group). Logged-out users and users with no genre preferences get the unfiltered order, unchanged from Phase 2
 - `personalizeByGenres` extracted as a pure function (in `movieMappers.js`) specifically so this reordering logic is unit-testable without a DB
 
-## Phase 3 — Watchlist & Favorites
+### Phase 3 — Watchlist & Favorites
 - **`addToWatchlist(movieId)` / `removeFromWatchlist(movieId)`** and **`addToFavorites(movieId)` / `removeFromFavorites(movieId)`** mutations, plus **`watchlist`** / **`favorites`** queries (current user's list) — all auth-required
 - Kept as **two separate resolver modules** (`watchlist.resolvers.js`, `favorites.resolvers.js`) rather than one generic "list" abstraction, per the plan's design call — they mirror each other but stay independent, so favorites-only behavior later doesn't touch watchlist code
 - **Idempotent add**: `findOneAndUpdate` with a `{ "watchlist.movieId": { $ne: movieId } }` filter — adding an already-present movie is a no-op, not a duplicate or an error
 - **`getOrFetchMovie(tmdbId)`** (exported from `movies.resolvers.js`) is cache-first: checks Mongo before ever calling TMDB, so referencing a movie already seen via dashboard/search/detail costs nothing extra
 - `User.watchlist[]` / `User.favorites[]` now store `movieId` as `Int` (TMDB id), matching `Movie.tmdbId`
-
-## What's here (Phases 1-2, unchanged)
 
 ### Phase 1 — Foundation
 - **Express + Apollo Server 5**, GraphQL mounted at `POST /graphql`, health check at `GET /health`
@@ -86,6 +113,11 @@ npm test
   `User` model
 - `movieMappers.personalizeByGenres` tests (in `tests/movies.test.js`) — stable-partition reorder
   logic used by dashboard personalization
+- `tests/ogCrawler.test.js` — bot-detection patterns and HTML escaping/truncation, including an
+  explicit check that no raw unescaped quote/angle-bracket from movie data survives into the output
+- `tests/movieOgRoute.test.js` — mounts only the OG route in a minimal Express app: crawler UA
+  gets the HTML shell, browser UA falls through, invalid `tmdbId` and a failed movie lookup both
+  fall through cleanly (not a 500)
 
 TMDB itself isn't reachable in every sandboxed environment, so these tests validate the
 request-building and data-mapping logic against realistic fixtures rather than hitting the
@@ -173,11 +205,22 @@ mutation {
 }
 ```
 
-## Next: Phase 5 — Share & Polish
+Test the OG preview route with a spoofed crawler User-Agent (a real Slack/Twitter/etc. request
+would trigger this the same way):
 
-`ShareButton` (native Web Share API with clipboard fallback), an OG meta-tag crawler
-middleware on `/movies/:id` for rich link previews, loading skeletons, error boundaries,
-route-based code splitting, a `TanStack Virtual` pass on genre rows/search results, and
-the Vitest+RTL/Playwright frontend test suites. This is the phase where frontend work
-(so far this backend has been built phase-by-phase on its own) becomes the primary focus.
+```bash
+curl -A "Slackbot-LinkExpanding 1.0" http://localhost:4000/movies/278
+```
+
+You should get back HTML with `og:title`, `og:image`, and `og:description` tags. A normal
+browser request to the same URL falls through to a 404 for now, until the frontend's static
+build is wired up to serve real users there (see the same-origin note above).
+
+## Next: Phase 5 (frontend) — Share & Polish
+
+The backend portion of Phase 5 is done. What's left is entirely frontend, and it's the first
+frontend work across all five phases (everything so far has been backend-only): the React app
+itself, `ShareButton` (native Web Share API with clipboard fallback), loading skeletons, error
+boundaries, route-based code splitting, a `TanStack Virtual` pass on genre rows/search results,
+and the Vitest+RTL/Playwright test suites.
 
