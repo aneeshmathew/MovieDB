@@ -1,17 +1,26 @@
-# MovieDB Server — Phase 1 & 2: Foundation, Dashboard & Browse
+# MovieDB Server — Phases 1-4: Foundation through Ratings & Preferences
 
-Express + Apollo Server (GraphQL) + MongoDB backend. Auth (Phase 1) and TMDB-backed
-browsing (Phase 2) are both covered here. Watchlist, favorites, ratings, and preferences
-resolvers are added in later phases (see `moviedb-plan-v3.md`).
+Express + Apollo Server (GraphQL) + MongoDB backend. Auth, TMDB-backed browsing, watchlist/favorites,
+and now ratings + preferences are all covered here (see `moviedb-plan-v3.md` for the full plan).
 
-### Phase 3 — Watchlist & Favorites
+## Phase 4 — Ratings & Preferences
+- **`Rating` model** — one rating per user per movie, enforced by a unique `(userId, movieId)` compound index
+- **`upsertRating(movieId, score, review?)` / `deleteRating(movieId)`** mutations + **`rating(movieId)`** query (current user's own rating)
+  - Community `Movie.avgRating`/`ratingCount` are **recomputed from the Rating collection** after every upsert/delete (an aggregate `$avg`/`$sum`), rather than incremented/decremented in place — the Rating collection stays the single source of truth, avoiding drift
+  - Resubmitting a rating without a review **clears** any previous review text (deterministic overwrite, not a partial merge)
+  - Duplicate-key races on the unique index are caught and translated into a clean `409 RATING_CONFLICT` instead of a raw Mongo error
+- **`myPreferences` query + `updatePreferences(input)` mutation** — partial updates only `$set` the fields actually sent (dot-notation on the `preferences` subdocument), so toggling one preference never clobbers the others
+- **Dashboard personalization**: `dashboard` now checks `context.user` and, if logged in, reorders each section so movies matching the user's `preferences.genres` move to the front (stable partition — relative order preserved within each group). Logged-out users and users with no genre preferences get the unfiltered order, unchanged from Phase 2
+- `personalizeByGenres` extracted as a pure function (in `movieMappers.js`) specifically so this reordering logic is unit-testable without a DB
+
+## Phase 3 — Watchlist & Favorites
 - **`addToWatchlist(movieId)` / `removeFromWatchlist(movieId)`** and **`addToFavorites(movieId)` / `removeFromFavorites(movieId)`** mutations, plus **`watchlist`** / **`favorites`** queries (current user's list) — all auth-required
 - Kept as **two separate resolver modules** (`watchlist.resolvers.js`, `favorites.resolvers.js`) rather than one generic "list" abstraction, per the plan's design call — they mirror each other but stay independent, so favorites-only behavior later doesn't touch watchlist code
 - **Idempotent add**: `findOneAndUpdate` with a `{ "watchlist.movieId": { $ne: movieId } }` filter — adding an already-present movie is a no-op, not a duplicate or an error
 - **`getOrFetchMovie(tmdbId)`** (exported from `movies.resolvers.js`) is cache-first: checks Mongo before ever calling TMDB, so referencing a movie already seen via dashboard/search/detail costs nothing extra
 - `User.watchlist[]` / `User.favorites[]` now store `movieId` as `Int` (TMDB id), matching `Movie.tmdbId`
 
-## What's here (Phase 1 & 2, unchanged)
+## What's here (Phases 1-2, unchanged)
 
 ### Phase 1 — Foundation
 - **Express + Apollo Server 5**, GraphQL mounted at `POST /graphql`, health check at `GET /health`
@@ -70,6 +79,13 @@ npm test
 - `tests/watchlist.test.js` / `tests/favorites.test.js` — resolver logic with the `User`
   model's statics monkey-patched (no DB needed): idempotent add, `$pull` remove, auth guard,
   and cache-first movie resolution
+- `tests/ratings.test.js` — upsert/delete resolver logic against monkey-patched `Rating`/`Movie`
+  models: score validation before any DB call, aggregate recompute after write, duplicate-key
+  → 409 translation, review-clearing behavior
+- `tests/preferences.test.js` — partial-update `$set` dot-notation logic against a monkey-patched
+  `User` model
+- `movieMappers.personalizeByGenres` tests (in `tests/movies.test.js`) — stable-partition reorder
+  logic used by dashboard personalization
 
 TMDB itself isn't reachable in every sandboxed environment, so these tests validate the
 request-building and data-mapping logic against realistic fixtures rather than hitting the
@@ -127,10 +143,41 @@ mutation {
 }
 ```
 
-## Next: Phase 4 — Ratings & Preferences
+Rate a movie and check the community average updates:
 
-`upsertRating`/`deleteRating` mutations against a new `Rating` collection (unique
-`(userId, movieId)` index, upsert on write), a `PreferencesPage`-facing `updatePreferences`
-mutation, and dashboard personalization that boosts/reorders sections by the user's
-preferred genres.
+```graphql
+mutation {
+  upsertRating(movieId: 278, score: 5, review: "A masterpiece") {
+    id score review
+  }
+}
+```
+
+```graphql
+{
+  movie(tmdbId: 278) { title avgRating ratingCount }
+}
+```
+
+Update preferences, then re-run `dashboard` — sections should reorder to favor those genres:
+
+```graphql
+mutation {
+  updatePreferences(input: { genres: [18, 35] }) { genres language adultContent }
+}
+```
+
+```graphql
+{
+  dashboard { trending { title genres } }
+}
+```
+
+## Next: Phase 5 — Share & Polish
+
+`ShareButton` (native Web Share API with clipboard fallback), an OG meta-tag crawler
+middleware on `/movies/:id` for rich link previews, loading skeletons, error boundaries,
+route-based code splitting, a `TanStack Virtual` pass on genre rows/search results, and
+the Vitest+RTL/Playwright frontend test suites. This is the phase where frontend work
+(so far this backend has been built phase-by-phase on its own) becomes the primary focus.
 

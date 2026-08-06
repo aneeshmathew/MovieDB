@@ -1,7 +1,8 @@
 const Movie = require("../../models/Movie");
+const User = require("../../models/User");
 const tmdbService = require("../../services/tmdb.service");
 const cacheService = require("../../services/cache.service");
-const { extractCast, extractTrailerKey } = require("./movieMappers");
+const { extractCast, extractTrailerKey, personalizeByGenres } = require("./movieMappers");
 
 const { TTL } = cacheService;
 
@@ -36,7 +37,7 @@ async function getOrFetchMovie(tmdbId) {
 
 const resolvers = {
   Query: {
-    dashboard: async () => {
+    dashboard: async (_parent, _args, context) => {
       const [newReleases, trending, upcoming, classics] = await Promise.all([
         cacheService.getOrSet("dashboard:newReleases", TTL.DAYS(1), async () =>
           upsertMovies((await tmdbService.getNowPlaying()).results)
@@ -52,7 +53,21 @@ const resolvers = {
         ),
       ]);
 
-      return { newReleases, trending, upcoming, classics };
+      // Boost/reorder each section by the logged-in user's preferred genres.
+      // Sections themselves stay cached and shared across users — only this
+      // final reordering is per-user, and it's cheap (in-memory partition).
+      let preferredGenres = [];
+      if (context?.user) {
+        const user = await User.findById(context.user.userId).select("preferences.genres");
+        preferredGenres = user?.preferences?.genres || [];
+      }
+
+      return {
+        newReleases: personalizeByGenres(newReleases, preferredGenres),
+        trending: personalizeByGenres(trending, preferredGenres),
+        upcoming: personalizeByGenres(upcoming, preferredGenres),
+        classics: personalizeByGenres(classics, preferredGenres),
+      };
     },
 
     movie: async (_parent, { tmdbId }) => {

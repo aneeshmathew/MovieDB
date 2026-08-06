@@ -14,4 +14,26 @@ function extractTrailerKey(detail) {
   return trailer?.key || null;
 }
 
-module.exports = { extractCast, extractTrailerKey };
+// Stable partition: movies matching any of the user's preferred genres move
+// to the front, preserving relative order within each group otherwise.
+// Falls through unchanged for logged-out users (empty preferredGenres).
+function personalizeByGenres(movies, preferredGenres = []) {
+  if (!preferredGenres.length) return movies;
+
+  const preferredSet = new Set(preferredGenres);
+  const matched = [];
+  const unmatched = [];
+
+  for (const movie of movies) {
+    const genres = movie.genres || [];
+    if (genres.some((g) => preferredSet.has(g))) {
+      matched.push(movie);
+    } else {
+      unmatched.push(movie);
+    }
+  }
+
+  return [...matched, ...unmatched];
+}
+
+module.exports = { extractCast, extractTrailerKey, personalizeByGenres };

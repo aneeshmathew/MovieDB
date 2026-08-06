@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 const Movie = require("../src/models/Movie");
-const { extractCast, extractTrailerKey } = require("../src/graphql/resolvers/movieMappers");
+const { extractCast, extractTrailerKey, personalizeByGenres } = require("../src/graphql/resolvers/movieMappers");
 
 // Shaped like a real TMDB /movie/now_playing or /trending list item.
 const listItemFixture = {
@@ -110,6 +110,32 @@ describe("movieMappers.extractCast", () => {
 
   it("returns an empty array when credits are missing", () => {
     expect(extractCast({})).toEqual([]);
+  });
+});
+
+describe("movieMappers.personalizeByGenres", () => {
+  it("returns the list unchanged when there are no preferred genres", () => {
+    const movies = [{ genres: [16] }, { genres: [18] }];
+    expect(personalizeByGenres(movies, [])).toEqual(movies);
+    expect(personalizeByGenres(movies, undefined)).toEqual(movies);
+  });
+
+  it("moves genre-matching movies to the front, preserving relative order within each group", () => {
+    const action = { id: "a", genres: [28] };
+    const drama = { id: "d", genres: [18] };
+    const comedy = { id: "c", genres: [35] };
+    const horror = { id: "h", genres: [27] };
+
+    const result = personalizeByGenres([action, drama, comedy, horror], [18, 35]);
+
+    expect(result.map((m) => m.id)).toEqual(["d", "c", "a", "h"]);
+  });
+
+  it("treats a movie with no genres field as unmatched rather than throwing", () => {
+    const noGenres = { id: "n" };
+    const matches = { id: "m", genres: [18] };
+    const result = personalizeByGenres([noGenres, matches], [18]);
+    expect(result.map((m) => m.id)).toEqual(["m", "n"]);
   });
 });
 
