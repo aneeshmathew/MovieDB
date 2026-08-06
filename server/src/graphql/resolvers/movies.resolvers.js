@@ -21,6 +21,19 @@ function loadDetail(tmdbId) {
   );
 }
 
+// Cache-first lookup used by watchlist/favorites: if the movie is already
+// cached locally (e.g. seen on the dashboard or in search), skip the TMDB
+// call entirely — a partial (list-only) cached doc is fine for card
+// display, since cast/trailer/similar still resolve lazily either way.
+// Only reaches out to TMDB when this tmdbId has genuinely never been seen.
+async function getOrFetchMovie(tmdbId) {
+  const existing = await Movie.findOne({ tmdbId });
+  if (existing) return existing;
+
+  const detail = await loadDetail(tmdbId);
+  return Movie.upsertFromTmdb(detail);
+}
+
 const resolvers = {
   Query: {
     dashboard: async () => {
@@ -81,4 +94,4 @@ const resolvers = {
   },
 };
 
-module.exports = resolvers;
+module.exports = { resolvers, getOrFetchMovie };

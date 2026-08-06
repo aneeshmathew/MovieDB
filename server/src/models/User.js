@@ -4,12 +4,12 @@ const bcrypt = require("bcrypt");
 const { Schema } = mongoose;
 
 const watchlistItemSchema = new Schema(
-  { movieId: { type: String, required: true }, addedAt: { type: Date, default: Date.now } },
+  { movieId: { type: Number, required: true }, addedAt: { type: Date, default: Date.now } },
   { _id: false }
 );
 
 const favoriteItemSchema = new Schema(
-  { movieId: { type: String, required: true }, addedAt: { type: Date, default: Date.now } },
+  { movieId: { type: Number, required: true }, addedAt: { type: Date, default: Date.now } },
   { _id: false }
 );
 

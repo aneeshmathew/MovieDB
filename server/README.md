@@ -4,7 +4,14 @@ Express + Apollo Server (GraphQL) + MongoDB backend. Auth (Phase 1) and TMDB-bac
 browsing (Phase 2) are both covered here. Watchlist, favorites, ratings, and preferences
 resolvers are added in later phases (see `moviedb-plan-v3.md`).
 
-## What's here
+### Phase 3 — Watchlist & Favorites
+- **`addToWatchlist(movieId)` / `removeFromWatchlist(movieId)`** and **`addToFavorites(movieId)` / `removeFromFavorites(movieId)`** mutations, plus **`watchlist`** / **`favorites`** queries (current user's list) — all auth-required
+- Kept as **two separate resolver modules** (`watchlist.resolvers.js`, `favorites.resolvers.js`) rather than one generic "list" abstraction, per the plan's design call — they mirror each other but stay independent, so favorites-only behavior later doesn't touch watchlist code
+- **Idempotent add**: `findOneAndUpdate` with a `{ "watchlist.movieId": { $ne: movieId } }` filter — adding an already-present movie is a no-op, not a duplicate or an error
+- **`getOrFetchMovie(tmdbId)`** (exported from `movies.resolvers.js`) is cache-first: checks Mongo before ever calling TMDB, so referencing a movie already seen via dashboard/search/detail costs nothing extra
+- `User.watchlist[]` / `User.favorites[]` now store `movieId` as `Int` (TMDB id), matching `Movie.tmdbId`
+
+## What's here (Phase 1 & 2, unchanged)
 
 ### Phase 1 — Foundation
 - **Express + Apollo Server 5**, GraphQL mounted at `POST /graphql`, health check at `GET /health`
@@ -60,6 +67,9 @@ npm test
   plus `extractCast`/`extractTrailerKey`
 - `tests/tmdb-and-cache.test.js` — cache hit/miss/invalidation semantics, and `tmdb.service`
   request-building + error handling against a mocked `fetch` (no live network call)
+- `tests/watchlist.test.js` / `tests/favorites.test.js` — resolver logic with the `User`
+  model's statics monkey-patched (no DB needed): idempotent add, `$pull` remove, auth guard,
+  and cache-first movie resolution
 
 TMDB itself isn't reachable in every sandboxed environment, so these tests validate the
 request-building and data-mapping logic against realistic fixtures rather than hitting the
@@ -101,9 +111,26 @@ mutation {
 }
 ```
 
-## Next: Phase 3 — Watchlist & Favorites
+Watchlist/favorites mutations require an `Authorization: Bearer <accessToken>` header
+(the token returned from `register`/`login`):
 
-`addToWatchlist`/`removeFromWatchlist` and `addToFavorites`/`removeFromFavorites` mutations
-(`$addToSet`/`$pull` against the `User` model's arrays), plus the corresponding GraphQL
-queries to fetch a user's lists.
+```graphql
+mutation {
+  addToWatchlist(movieId: 278) { title tmdbId }
+}
+```
+
+```graphql
+{
+  watchlist { title posterPath }
+  favorites { title posterPath }
+}
+```
+
+## Next: Phase 4 — Ratings & Preferences
+
+`upsertRating`/`deleteRating` mutations against a new `Rating` collection (unique
+`(userId, movieId)` index, upsert on write), a `PreferencesPage`-facing `updatePreferences`
+mutation, and dashboard personalization that boosts/reorders sections by the user's
+preferred genres.
 

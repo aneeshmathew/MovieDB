@@ -2,12 +2,12 @@ const { gql } = require("graphql-tag");
 
 const typeDefs = gql`
   type WatchlistItem {
-    movieId: String!
+    movieId: Int!
     addedAt: String!
   }
 
   type FavoriteItem {
-    movieId: String!
+    movieId: Int!
     addedAt: String!
   }
 
