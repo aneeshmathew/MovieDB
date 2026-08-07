@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "schema:print": "node scripts/print-schema.js"
   },
   "dependencies": {
     "@apollo/server": "^5.0.0",

@@ -1,0 +1,119 @@
+type WatchlistItem {
+  movieId: Int!
+  addedAt: String!
+}
+
+type FavoriteItem {
+  movieId: Int!
+  addedAt: String!
+}
+
+type Preferences {
+  genres: [Int!]!
+  language: String!
+  adultContent: Boolean!
+  autoplayTrailers: Boolean!
+}
+
+type User {
+  id: ID!
+  name: String!
+  email: String!
+  avatar: String
+  watchlist: [WatchlistItem!]!
+  favorites: [FavoriteItem!]!
+  preferences: Preferences!
+  createdAt: String!
+}
+
+type AuthPayload {
+  accessToken: String!
+  user: User!
+}
+
+input RegisterInput {
+  name: String!
+  email: String!
+  password: String!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+type Query {
+  me: User
+  dashboard: DashboardSections!
+  movie(tmdbId: Int!): Movie
+  searchMovies(query: String!, page: Int): [Movie!]!
+  watchlist: [Movie!]!
+  favorites: [Movie!]!
+  rating(movieId: Int!): Rating
+  myPreferences: Preferences!
+}
+
+type Mutation {
+  register(input: RegisterInput!): AuthPayload!
+  login(input: LoginInput!): AuthPayload!
+  refresh: AuthPayload!
+  logout: Boolean!
+  addToWatchlist(movieId: Int!): [Movie!]!
+  removeFromWatchlist(movieId: Int!): [Movie!]!
+  addToFavorites(movieId: Int!): [Movie!]!
+  removeFromFavorites(movieId: Int!): [Movie!]!
+  upsertRating(movieId: Int!, score: Int!, review: String): Rating!
+  deleteRating(movieId: Int!): Boolean!
+  updatePreferences(input: PreferencesInput!): Preferences!
+}
+
+type CastMember {
+  id: Int!
+  name: String!
+  character: String
+  profilePath: String
+}
+
+type Movie {
+  id: ID!
+  tmdbId: Int!
+  title: String!
+  overview: String
+  posterPath: String
+  backdropPath: String
+  genres: [Int!]!
+  releaseDate: String
+  releaseYear: Int
+  runtime: Int
+  tmdbVoteAverage: Float!
+  tmdbVoteCount: Int!
+  avgRating: Float!
+  ratingCount: Int!
+  isClassic: Boolean!
+  cast: [CastMember!]!
+  trailerKey: String
+  similar: [Movie!]!
+}
+
+type DashboardSections {
+  newReleases: [Movie!]!
+  trending: [Movie!]!
+  upcoming: [Movie!]!
+  classics: [Movie!]!
+}
+
+type Rating {
+  id: ID!
+  movieId: Int!
+  score: Int!
+  review: String
+  createdAt: String!
+  updatedAt: String!
+}
+
+input PreferencesInput {
+  genres: [Int!]
+  language: String
+  adultContent: Boolean
+  autoplayTrailers: Boolean
+}

@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const path = require("path");
+const fs = require("fs");
 const { ApolloServer } = require("@apollo/server");
 const { expressMiddleware } = require("@as-integrations/express4");
 const { unwrapResolverError } = require("@apollo/server/errors");
@@ -29,17 +31,9 @@ async function createApp() {
   // table), a crawler hitting the Vercel domain never reaches this route —
   // you'd need either (a) a platform-level rewrite forwarding bot user
   // agents to this backend, or (b) serve the built SPA from this same
-  // Express app instead of a separate static host. See README §Phase 5.
+  // Express app instead of a separate static host, which is what the
+  // CLIENT_DIST_PATH block below this file does. See README §Phase 5.
   app.use(movieOgRoute);
-
-  // Once the frontend is built, real (non-crawler) requests to /movies/:tmdbId
-  // and other client routes fall through to here — serve the SPA's static
-  // build with a history-fallback for client-side routing, e.g.:
-  //
-  //   app.use(express.static(path.join(__dirname, "../../client/dist")));
-  //   app.get("*", (req, res) => res.sendFile(path.join(__dirname, "../../client/dist/index.html")));
-  //
-  // Left commented out until the client/ build actually exists.
 
   const apolloServer = new ApolloServer({
     typeDefs,
@@ -84,6 +78,34 @@ async function createApp() {
       },
     })
   );
+
+  // Serves the built frontend (real, non-crawler traffic) from this same
+  // Express app — the same-origin fix flagged in the OG-preview comment
+  // above. CLIENT_DIST_PATH is configurable because the client and server
+  // repos are delivered/deployed separately; it defaults to a sibling
+  // "client/dist" next to this server's own parent directory, which only
+  // resolves correctly if you've placed them that way. Guarded by
+  // fs.existsSync so an API-only deployment (or the test suite, where no
+  // client build exists) doesn't crash trying to serve a missing folder —
+  // it just skips this block and unmatched routes 404 as before.
+  const clientDistPath = env.CLIENT_DIST_PATH
+    ? path.resolve(env.CLIENT_DIST_PATH)
+    : path.join(__dirname, "../../client/dist");
+
+  if (fs.existsSync(clientDistPath)) {
+    app.use(express.static(clientDistPath));
+    // History-fallback: any request that isn't a static asset and wasn't
+    // already handled above (/health, /movies/:id crawler check, /graphql)
+    // gets index.html, so React Router can handle the route client-side.
+    app.get("*", (_req, res) => {
+      res.sendFile(path.join(clientDistPath, "index.html"));
+    });
+  } else {
+    console.log(
+      `ℹ️  No client build found at ${clientDistPath} — running API-only. ` +
+        "Set CLIENT_DIST_PATH or build the client to this path to serve the SPA from this server."
+    );
+  }
 
   app.use(errorHandler);
 

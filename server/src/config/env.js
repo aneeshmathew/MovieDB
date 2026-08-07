@@ -12,6 +12,11 @@ const envSchema = z.object({
   // TMDB v4 read access token (Bearer), NOT the v3 api_key — sent as an
   // Authorization header rather than a URL query param.
   TMDB_ACCESS_TOKEN: z.string().optional().default(""),
+  // Optional override for where to find the built frontend's static files.
+  // Defaults (in app.js) to a sibling "client/dist" next to this server's
+  // parent directory if unset. Only relevant when serving the SPA from
+  // this same Express app rather than a separate static host.
+  CLIENT_DIST_PATH: z.string().optional().default(""),
 });
 
 const parsed = envSchema.safeParse(process.env);

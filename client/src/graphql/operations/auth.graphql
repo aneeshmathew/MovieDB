@@ -1,0 +1,84 @@
+mutation Register($input: RegisterInput!) {
+  register(input: $input) {
+    accessToken
+    user {
+      id
+      name
+      email
+      avatar
+      watchlist {
+        movieId
+      }
+      favorites {
+        movieId
+      }
+      preferences {
+        genres
+        language
+        adultContent
+        autoplayTrailers
+      }
+    }
+  }
+}
+
+mutation Login($input: LoginInput!) {
+  login(input: $input) {
+    accessToken
+    user {
+      id
+      name
+      email
+      avatar
+      watchlist {
+        movieId
+      }
+      favorites {
+        movieId
+      }
+      preferences {
+        genres
+        language
+        adultContent
+        autoplayTrailers
+      }
+    }
+  }
+}
+
+mutation Refresh {
+  refresh {
+    accessToken
+    user {
+      id
+      name
+      email
+      avatar
+    }
+  }
+}
+
+mutation Logout {
+  logout
+}
+
+query Me {
+  me {
+    id
+    name
+    email
+    avatar
+    watchlist {
+      movieId
+    }
+    favorites {
+      movieId
+    }
+    preferences {
+      genres
+      language
+      adultContent
+      autoplayTrailers
+    }
+  }
+}

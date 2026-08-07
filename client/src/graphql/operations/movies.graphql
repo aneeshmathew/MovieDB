@@ -1,0 +1,55 @@
+fragment MovieCardFields on Movie {
+  id
+  tmdbId
+  title
+  posterPath
+  backdropPath
+  releaseYear
+  tmdbVoteAverage
+  avgRating
+  ratingCount
+  isClassic
+  genres
+}
+
+query Dashboard {
+  dashboard {
+    newReleases {
+      ...MovieCardFields
+    }
+    trending {
+      ...MovieCardFields
+    }
+    upcoming {
+      ...MovieCardFields
+    }
+    classics {
+      ...MovieCardFields
+    }
+  }
+}
+
+query MovieDetail($tmdbId: Int!) {
+  movie(tmdbId: $tmdbId) {
+    ...MovieCardFields
+    overview
+    runtime
+    releaseDate
+    trailerKey
+    cast {
+      id
+      name
+      character
+      profilePath
+    }
+    similar {
+      ...MovieCardFields
+    }
+  }
+}
+
+query SearchMovies($query: String!, $page: Int) {
+  searchMovies(query: $query, page: $page) {
+    ...MovieCardFields
+  }
+}

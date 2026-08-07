@@ -5,7 +5,7 @@ watchlist/favorites, ratings/preferences, and now the OG-preview crawler route a
 covered here (see `moviedb-plan-v3.md` for the full plan, including the frontend work
 that makes up the rest of Phase 5).
 
-## Phase 5 (backend) — OG Link Previews
+## Phase 5 (backend) — OG Link Previews + SPA serving
 - **`GET /movies/:tmdbId`** (`src/routes/movieOg.route.js`) — detects social/link-preview
   crawlers (Slack, Twitter, Discord, WhatsApp, LinkedIn, etc.) by `User-Agent` and serves a
   minimal server-rendered HTML shell with Open Graph + Twitter Card meta tags. Everyone else
@@ -15,20 +15,27 @@ that makes up the rest of Phase 5).
   HTML-escaped before interpolation — TMDB data can contain quotes/angle brackets, and this
   route has no other input sanitization layer in front of it.
 - Falls through (not a 500) on invalid `tmdbId` or a failed movie lookup, so a crawler always
-  gets *something* rather than an error page.
+  gets *something* rather than an error page — in practice this now means the SPA shell
+  (see below) rather than a 404, which is a better fallback than what existed before the
+  client build existed.
+- **SPA static serving is now wired up** (`app.js`, after `/graphql`): if a built client
+  exists at `CLIENT_DIST_PATH` (or the default sibling `../../client/dist`), real
+  (non-crawler) requests are served by `express.static` with an `index.html`
+  history-fallback for client-side routing. This is what actually resolves the same-origin
+  requirement below — option 1, not just described anymore. Guarded by `fs.existsSync` so an
+  API-only deployment (or the test suite) doesn't break when no client build is present; you'll
+  see an informational log line instead.
 
-**⚠️ Same-origin requirement:** this route only intercepts crawler traffic that reaches
-*this* server. If the frontend and backend are deployed on separate origins (e.g. Vercel for
-the frontend + Render for this backend, per the original stack table), a crawler hitting the
-Vercel domain **never reaches this route** — the meta tags would silently never appear in
-link previews. To make this actually work in production, either:
-1. Serve the built frontend (`client/dist`) from this same Express app instead of a separate
-   static host (uncomment the static-serving block in `app.js`), or
-2. Add a platform-level rewrite (e.g. a Vercel rewrite matching known bot user agents) that
-   forwards those specific requests to this backend's `/movies/:tmdbId` route.
-
-This is flagged rather than silently built as if it "just works," since it's the kind of gap
-that's invisible until someone actually pastes a link into Slack and gets no preview.
+**⚠️ Same-origin requirement (resolved, with a caveat):** the OG route only intercepts crawler
+traffic that reaches *this* server. With the static-serving block above, deploying the client's
+build output alongside this server (same origin) is now directly supported — set
+`CLIENT_DIST_PATH` to point at it, or place `client/dist` as a sibling of this server's parent
+directory. If instead you deploy the frontend and backend on **separate origins** (e.g. Vercel
+for the frontend + Render for this backend, per the original stack table), the static-serving
+block here is irrelevant to *that* deployment — a crawler hitting the Vercel domain still never
+reaches this server, and you'd need a platform-level rewrite (e.g. a Vercel rewrite matching
+known bot user agents) forwarding those specific requests to this backend's
+`/movies/:tmdbId` route instead. Pick one topology; the fix differs by which you choose.
 
 ## What's here (Phases 1-4, unchanged)
 
@@ -84,6 +91,9 @@ Fill in `.env`:
 - `TMDB_ACCESS_TOKEN` — from TMDB account settings → API → **"API Read Access Token"**
   (the long JWT-looking string, **not** the shorter "API Key"). This is what goes as a
   Bearer token in the `Authorization` header.
+- `CLIENT_DIST_PATH` — optional. Only needed if you're serving the built frontend from this
+  same server (see Phase 5 section above). Leave blank to run API-only, or if the frontend is
+  hosted separately.
 
 ```bash
 npm run dev   # nodemon, watches src/
