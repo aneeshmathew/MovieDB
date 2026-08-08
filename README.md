@@ -1,151 +1,60 @@
-# MovieDB — Plan v3 (condensed)
+# MovieDB
 
-## Stack
-- Frontend: React + TypeScript + Vite
-- Data: GraphQL (Apollo Server) + graphql-request + TanStack Query + GraphQL Codegen
-- Client state: Zustand (auth token in memory, UI toggles only — no Redux)
-- Styling: Tailwind CSS
-- Virtualization: TanStack Virtual (long rows/grids)
-- Backend: Node.js + Express + Apollo Server
-- DB: MongoDB Atlas + Mongoose
-- Auth: JWT access (short-lived) + httpOnly refresh cookie
-- Validation: Zod (frontend + backend)
-- Testing: Vitest + RTL (unit/component), Playwright (E2E)
-- External data: TMDB API
-- Optional: Cloudinary (user avatars, if added later)
+Netflix-style MERN movie database — GraphQL backend (`server/`) + React frontend (`client/`).
+See `server/moviedb-plan-v3.md` for the full build plan; `server/README.md` and
+`client/README.md` for phase-by-phase detail on each side.
 
-## Data Models
-```
-User: { _id, name, email, passwordHash, avatar, createdAt,
-  watchlist: [{movieId, addedAt}],
-  favorites: [{movieId, addedAt}],
-  preferences: { genres[], language, adultContent, autoplayTrailers } }
+## Quick start
 
-Movie: { _id, tmdbId, title, overview, posterPath, backdropPath,
-  genres[], releaseDate, runtime, avgRating, ratingCount, isClassic, releaseYear }
-
-Rating: { userId, movieId, score(1-5), review?, createdAt }
-  - unique index (userId, movieId), upsert on write
-```
-Favorites and watchlist are separate arrays (different intent, may overlap), not one polymorphic list.
-
-## GraphQL Schema (surface, not exhaustive)
-```
-Query {
-  dashboard: DashboardSections          # newReleases, classics, trending, upcoming — one round trip
-  movie(id): Movie
-  searchMovies(q): [Movie]
-  watchlist: [Movie]                    # auth required
-  favorites: [Movie]                    # auth required
-  rating(movieId): Rating
-  myPreferences: Preferences
-}
-Mutation {
-  register/login/refresh/logout
-  addToWatchlist(movieId) / removeFromWatchlist(movieId)
-  addToFavorites(movieId) / removeFromFavorites(movieId)
-  upsertRating(movieId, score, review?) / deleteRating(movieId)
-  updatePreferences(input)
-}
+```bash
+npm run setup   # once — installs deps, creates .env files, generates schema + codegen
+npm run dev     # every time — starts both dev servers, no reinstall
 ```
 
-## Dashboard → TMDB mapping
-| Section | TMDB source |
-|---|---|
-| New Releases | movie/now_playing |
-| Trending | trending/movie/week |
-| Upcoming | movie/upcoming |
-| Classics | discover/movie: primary_release_date.lte=-20y, vote_average.gte=7.5, vote_count.gte=1000 |
+**`npm run setup`** (run once, or again after pulling dependency changes):
+1. **Installs dependencies** in both `server/` and `client/` (`npm install` in each)
+2. **Sets up environment files** — copies `.env.example` → `.env` in both, and for the
+   server, generates real random `JWT_ACCESS_SECRET`/`JWT_REFRESH_SECRET` values so it boots
+   without you needing to generate them by hand. Existing `.env` files are left untouched.
+3. **Generates the GraphQL schema + typed client SDK** — prints the schema from the server's
+   live typeDefs, copies it into `client/`, and runs GraphQL Codegen
 
-Personalization: reorder/boost sections by `preferences.genres` when logged in; unfiltered version is the logged-out fallback.
+**`npm run dev`** (run every time you want to start working): starts both dev servers
+concurrently with labeled, color-coded output (`[server]`/`[client]`), and shuts both down
+cleanly on Ctrl+C or if either one crashes. It does **not** reinstall anything — if you haven't
+run `npm run setup` yet, it fails immediately with a clear message telling you to, rather than
+letting `vite`/`nodemon` fail confusingly deep inside `server/` or `client/`.
 
-## Image Loading
-- Poster (card): `t/p/w200/{path}`
-- Poster (detail): `t/p/w500/{path}`
-- Backdrop (hero): `t/p/w1280/{path}` (not `original` — too large)
-- `srcset`/`sizes` for responsive selection; `loading="lazy"` + `decoding="async"` except hero + first ~6 above-fold cards (eager)
-- Skeleton/solid-color placeholder while loading (no LQIP available from TMDB)
+No root `npm install` is required to run either script — `scripts/setup.js` and
+`scripts/dev.js` use only Node's built-in modules, specifically so this works on a completely
+fresh clone.
 
-## Auth Retry (401 handling)
-- Single in-flight refresh promise — concurrent 401s share one refresh call, not N
-- Retry original request once with new token; no further retries
-- TanStack Query `retry` excludes 401 (don't retry with known-stale token)
-- Refresh itself 401s → clear auth state, redirect `/login`, no loop
+**Before the app does anything useful**, fill in two values in `server/.env` (setup can't
+generate these for you — they're your own credentials):
+- `MONGO_URI` — an Atlas connection string, or `mongodb://localhost:27017/moviedb` for local Mongo
+- `TMDB_ACCESS_TOKEN` — from TMDB account settings → API → "API Read Access Token"
 
-## Layout Rules (Tailwind)
-- Flex: horizontal scroll rows (`flex overflow-x-auto gap-4 snap-x`), navbars, button groups — one-dimensional/unbounded
-- Grid: card grids (`grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6`), detail page poster+info (`grid-cols-1 md:grid-cols-[300px_1fr]`) — two-dimensional/fixed columns
-- Responsive via Tailwind breakpoint prefixes only (no separate media-query system)
+Without these, both dev servers still start — the client's Vite server boots fine on its own,
+and the backend fails fast with a clear `MongoDB connection failed` error (rather than hanging
+or silently half-working) until you provide a real `MONGO_URI`.
 
-## Accessibility (per component)
-- Scroll rows: `role="region"` + `aria-label`; keyboard scroll support
-- Favorite/watchlist buttons: `aria-pressed`, state-dependent `aria-label`
-- Star rating: `role="radiogroup"` + `role="radio"` per star (or native radios styled)
-- Search: `aria-label`, `aria-live="polite"` for result-count changes
-- Modals: focus trap, focus return on close, `role="dialog"` + `aria-modal="true"`
-- Images: descriptive `alt` (`"{title} poster"`); empty alt only for decorative backdrops
-- Skip-to-content link at top of page
+## Other root scripts
 
-## Testing Split
-- Vitest + RTL: components/hooks (rendering, event handlers, aria state)
-- Playwright: critical E2E journeys (register→login, add/remove favorite, submit rating, search)
+```bash
+npm run setup   # just the install+env+schema+codegen steps, without starting dev servers
+npm run build   # production build of the client
+npm test        # runs both server and client test suites
+```
 
-## Performance
-- Route-based code splitting via `React.lazy` + `Suspense` (+ `react-error-boundary`)
-- `TanStack Virtual` for genre rows / search grids
-- `React.memo` on `MovieCard`; `useMemo`/`useCallback` for derived data
-- Framer Motion for card hover/expand (paired with memoized cards to avoid stray re-renders)
+## Repo layout
 
-## Build Phases
+```
+moviedb/
+├── server/    Express + Apollo Server (GraphQL) + MongoDB — see server/README.md
+├── client/    React + TypeScript + Vite — see client/README.md
+└── scripts/   setup.js (install/env/schema/codegen) + dev.js (concurrent dev servers)
+```
 
-### Phase 1 — Foundation
-- Express app setup + Apollo Server mounted as middleware
-- MongoDB Atlas connection (`db.js`), env validation (`env.js`)
-- `User` model: `watchlist[]`, `favorites[]`, `preferences{}`
-- Auth: `register`, `login`, `refresh`, `logout` resolvers
-- JWT signing/verification (`token.service.js`), auth middleware attaching `req.user`
-- Zod validation schemas for auth inputs
-- Error handling middleware + `ApiError` class
-
-### Phase 2 — Dashboard & Browse
-- `tmdb.service.js`: wraps TMDB calls, keeps API key server-side
-- TMDB methods: `now_playing`, `trending/week`, `upcoming`, `discover` (classics query)
-- `cache.service.js`: TTL cache for TMDB responses (avoid rate limits)
-- `dashboard` GraphQL query aggregating all 4 sections in one round trip
-- `Movie` model + cache-on-read from TMDB
-- Movie detail page (GraphQL query for full fields: cast, trailers, similar movies)
-- Search (`searchMovies` query, debounced input on frontend)
-- Frontend: `DashboardPage` with 4 horizontal-scroll rows, `HeroBanner`, `MovieCard` - todo
-
-### Phase 3 — Watchlist & Favorites
-- `addToWatchlist` / `removeFromWatchlist` mutations (`$addToSet` / `$pull`)
-- `addToFavorites` / `removeFromFavorites` mutations (mirrors watchlist pattern, separate array)
-- Bookmark icon + heart icon toggles on `MovieCard` and detail page
-- `WatchlistPage`, `FavoritesPage`
-- Optimistic UI updates via TanStack Query mutation callbacks
-- ARIA: `aria-pressed` + state-dependent `aria-label` on both toggles
-
-### Phase 4 — Ratings & Preferences
-- `upsertRating` / `deleteRating` mutations, unique `(userId, movieId)` index
-- Star rating component (`role="radiogroup"`, keyboard-accessible)
-- Average rating + user's own rating shown on card/detail page
-- `PreferencesPage`: genre multi-select, language, adult-content toggle, autoplay toggle
-- `updatePreferences` mutation
-- Dashboard personalization: boost/reorder sections by `preferences.genres` for logged-in users
-
-### Phase 5 — Share & Polish
-- `ShareButton`: native Web Share API with clipboard-copy fallback
-- OG meta-tag crawler middleware on `/movies/:id` for rich link previews
-- Loading skeletons, error boundaries (`react-error-boundary`)
-- Route-based code splitting (`React.lazy` + `Suspense`)
-- `TanStack Virtual` pass on genre rows and search results grid
-- `React.memo` on `MovieCard`, `useMemo`/`useCallback` audit on derived state
-- Responsive design pass (Tailwind breakpoints), Framer Motion card hover effects
-- Full accessibility audit (skip link, focus traps on modals, `aria-live` on search)
-- Pagination/infinite scroll on browse and search pages
-- Vitest + RTL component tests, Playwright E2E suite (register→login, favorite/watchlist toggle, rating, search)
-
-## Open Decisions
-- Apollo Server (default) vs. GraphQL Yoga — Yoga spike optional before Phase 1
-- OG meta-tag crawler middleware confirmed as Phase 5, not launch-blocking
-- Classics thresholds (20y / 7.5 rating / 1000 votes) — tunable, open to product input
+This layout is also what the server's `CLIENT_DIST_PATH` default (`../../client/dist`)
+assumes, if you later serve the built frontend from the same Express server for the OG-preview
+crawler route to work same-origin — see `server/README.md`'s Phase 5 section.
