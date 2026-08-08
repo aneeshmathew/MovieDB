@@ -46,6 +46,17 @@ npm run build   # production build of the client
 npm test        # runs both server and client test suites
 ```
 
+## Backlog / not yet built
+
+- **My Lists** — custom, user-named movie lists (beyond the built-in Watchlist/Favorites),
+  with an additional "add to list" icon on every movie tile alongside the existing
+  watchlist/favorite icons. Needs its own data model (a `List` collection: name + owner +
+  movie ids) and a list-management UI (create/rename/delete, add/remove movies). Bigger scope
+  than the other features, intentionally deferred rather than half-built.
+- Playwright E2E suite (Vitest+RTL component coverage exists; no end-to-end journeys yet)
+- Share button (native Web Share API / clipboard fallback)
+- Pagination/infinite scroll on search results
+
 ## Repo layout
 
 ```

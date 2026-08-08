@@ -133,9 +133,8 @@ not assumed).
   API and downloading a headless-browser binary (Playwright), so I couldn't verify the visual
   result beyond code review and the production build succeeding. Run `npm run dev` yourself to
   see the real thing — recommend doing that before treating the design as final.
-- **Not yet built**: movie detail page, search, ratings UI, preferences UI, the share button,
-  and the OG-preview-dependent parts of Phase 5. Watchlist/Favorites pages exist but are
-  simple grids — no sorting/filtering yet.
+- **Not yet built**: the share button, custom "My Lists," and Playwright E2E coverage. Movie
+  detail, search, ratings, and profile management (below) are done as of this update.
 - **MovieRow's virtualizer** uses one constant card width for its size estimate, exact at the
   `sm:` breakpoint and up (176px) but slightly approximate below it (cards are 160px on
   mobile) — a minor, acceptable simplification, not a bug, but worth knowing if you're tuning
@@ -143,6 +142,11 @@ not assumed).
 
 ## Next up
 
-Movie detail page (cast, trailer, similar movies — the schema already supports all of this via
-lazy `Movie.cast`/`trailerKey`/`similar` fields), search with debounced input, the ratings star
-component, the preferences page, and the share button.
+This update added: the movie detail page (cast, trailer embed, `StarRating` widget,
+watchlist/favorite toggles, similar-movies row), search (`/search?q=`, sorted by release year
+descending client-side), the profile page (tabbed: info/reviews/favorites/watchlist, with
+name/email/password management wired to the new backend mutations), and a generic
+"login failed" message that no longer leaks the server's specific error reason.
+
+Still open: the share button, "My Lists" (custom user-created lists — see root README's
+backlog section), and Playwright E2E coverage.

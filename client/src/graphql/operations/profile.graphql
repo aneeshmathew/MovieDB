@@ -1,0 +1,32 @@
+mutation UpdateProfile($input: UpdateProfileInput!) {
+  updateProfile(input: $input) {
+    id
+    name
+    email
+    avatar
+  }
+}
+
+mutation ChangeEmail($newEmail: String!, $password: String!) {
+  changeEmail(newEmail: $newEmail, password: $password) {
+    id
+    email
+  }
+}
+
+mutation ChangePassword($currentPassword: String!, $newPassword: String!) {
+  changePassword(currentPassword: $currentPassword, newPassword: $newPassword)
+}
+
+query MyRatings {
+  myRatings {
+    id
+    movieId
+    score
+    review
+    updatedAt
+    movie {
+      ...MovieCardFields
+    }
+  }
+}

@@ -23,6 +23,7 @@ describe("ratings resolvers", () => {
   let originalAggregate;
   let originalMovieUpdateOne;
   let originalGetOrFetchMovie;
+  let originalFind;
 
   beforeEach(() => {
     originalFindOne = Rating.findOne;
@@ -31,6 +32,7 @@ describe("ratings resolvers", () => {
     originalAggregate = Rating.aggregate;
     originalMovieUpdateOne = Movie.updateOne;
     originalGetOrFetchMovie = moviesResolvers.getOrFetchMovie;
+    originalFind = Rating.find;
 
     moviesResolvers.getOrFetchMovie = vi.fn().mockResolvedValue(FAKE_MOVIE);
     Rating.aggregate = vi.fn().mockResolvedValue([{ _id: 278, avgRating: 4.5, ratingCount: 2 }]);
@@ -44,6 +46,7 @@ describe("ratings resolvers", () => {
     Rating.aggregate = originalAggregate;
     Movie.updateOne = originalMovieUpdateOne;
     moviesResolvers.getOrFetchMovie = originalGetOrFetchMovie;
+    Rating.find = originalFind;
   });
 
   describe("Query.rating", () => {
@@ -147,6 +150,36 @@ describe("ratings resolvers", () => {
         { $set: { avgRating: 0, ratingCount: 0 } }
       );
       expect(result).toBe(true);
+    });
+  });
+
+  describe("Query.myRatings", () => {
+    it("throws unauthorized without a session", async () => {
+      await expect(
+        ratingsResolvers.Query.myRatings(null, {}, { user: null })
+      ).rejects.toThrow(ApiError);
+    });
+
+    it("finds all of the current user's ratings, sorted by most recently updated", async () => {
+      const fakeRatings = [{ movieId: 278 }, { movieId: 550 }];
+      const sortMock = vi.fn().mockResolvedValue(fakeRatings);
+      Rating.find = vi.fn().mockReturnValue({ sort: sortMock });
+
+      const result = await ratingsResolvers.Query.myRatings(null, {}, AUTH_CONTEXT);
+
+      expect(Rating.find).toHaveBeenCalledWith({ userId: "user123" });
+      expect(sortMock).toHaveBeenCalledWith({ updatedAt: -1 });
+      expect(result).toBe(fakeRatings);
+    });
+  });
+
+  describe("Rating.movie field resolver", () => {
+    it("resolves the movie via the cache-first getOrFetchMovie helper", async () => {
+      const rating = { movieId: 278 };
+      const result = await ratingsResolvers.Rating.movie(rating);
+
+      expect(moviesResolvers.getOrFetchMovie).toHaveBeenCalledWith(278);
+      expect(result).toBe(FAKE_MOVIE);
     });
   });
 });

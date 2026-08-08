@@ -24,6 +24,15 @@ const WatchlistPage = lazy(() =>
 const FavoritesPage = lazy(() =>
   import("@/features/movies/FavoritesPage").then((m) => ({ default: m.FavoritesPage }))
 );
+const MovieDetailPage = lazy(() =>
+  import("@/features/movies/MovieDetailPage").then((m) => ({ default: m.MovieDetailPage }))
+);
+const SearchPage = lazy(() =>
+  import("@/features/movies/SearchPage").then((m) => ({ default: m.SearchPage }))
+);
+const ProfilePage = lazy(() =>
+  import("@/features/profile/ProfilePage").then((m) => ({ default: m.ProfilePage }))
+);
 
 function RouteFallback() {
   return (
@@ -86,9 +95,12 @@ export function App() {
               <Route path="/" element={<DashboardPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/movies/:tmdbId" element={<MovieDetailPage />} />
+              <Route path="/search" element={<SearchPage />} />
               <Route element={<ProtectedRoute />}>
                 <Route path="/watchlist" element={<WatchlistPage />} />
                 <Route path="/favorites" element={<FavoritesPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
               </Route>
             </Routes>
           </Suspense>

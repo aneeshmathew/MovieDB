@@ -25,6 +25,21 @@ const preferencesSchema = z.object({
   autoplayTrailers: z.boolean().optional(),
 });
 
+const updateProfileSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(100).optional(),
+  avatar: z.string().trim().url("Avatar must be a valid URL").optional().nullable(),
+});
+
+const changeEmailSchema = z.object({
+  newEmail: z.string().trim().email("Enter a valid email"),
+  password: z.string().min(1, "Password is required"),
+});
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(8, "New password must be at least 8 characters"),
+});
+
 // Parses `input` against `schema`; throws a 400 ApiError with per-field
 // messages attached as `.details` so resolvers don't each write their own try/catch.
 function validate(schema, input) {
@@ -38,4 +53,13 @@ function validate(schema, input) {
   return result.data;
 }
 
-module.exports = { registerSchema, loginSchema, ratingSchema, preferencesSchema, validate };
+module.exports = {
+  registerSchema,
+  loginSchema,
+  ratingSchema,
+  preferencesSchema,
+  updateProfileSchema,
+  changeEmailSchema,
+  changePasswordSchema,
+  validate,
+};

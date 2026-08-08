@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { Link } from "react-router-dom";
 import { Bookmark, Heart, Star } from "lucide-react";
 import { posterUrl } from "@/lib/tmdbImage";
 import { useListsStore } from "@/store/listsStore";
@@ -27,7 +28,10 @@ export const MovieCard = memo(function MovieCard({ movie, eager = false }: Movie
 
   return (
     <div className="group relative w-40 shrink-0 sm:w-44">
-      <div className="relative aspect-[2/3] overflow-hidden rounded-md bg-panel-raised ring-1 ring-line transition-transform duration-200 group-hover:scale-[1.03] group-hover:ring-amber/60">
+      <Link
+        to={`/movies/${movie.tmdbId}`}
+        className="relative block aspect-[2/3] overflow-hidden rounded-md bg-panel-raised ring-1 ring-line transition-transform duration-200 group-hover:scale-[1.03] group-hover:ring-amber/60"
+      >
         {poster ? (
           <img
             src={poster}
@@ -63,9 +67,16 @@ export const MovieCard = memo(function MovieCard({ movie, eager = false }: Movie
               type="button"
               aria-pressed={isInWatchlist}
               aria-label={isInWatchlist ? "Remove from watchlist" : "Add to watchlist"}
-              onClick={() => toggleWatchlist.mutate(isInWatchlist ? "remove" : "add")}
+              onClick={(e) => {
+                // Card is now wrapped in a Link — without this, the click
+                // would both toggle the watchlist AND navigate to the
+                // detail page, since click events bubble up to the <a>.
+                e.preventDefault();
+                e.stopPropagation();
+                toggleWatchlist.mutate(isInWatchlist ? "remove" : "add");
+              }}
               disabled={toggleWatchlist.isPending}
-              className="rounded-full bg-panel/90 p-1.5 text-ink hover:bg-panel disabled:opacity-50"
+              className="relative z-10 rounded-full bg-panel/90 p-1.5 text-ink hover:bg-panel disabled:opacity-50"
             >
               <Bookmark
                 className="h-3.5 w-3.5"
@@ -77,9 +88,13 @@ export const MovieCard = memo(function MovieCard({ movie, eager = false }: Movie
               type="button"
               aria-pressed={isFavorited}
               aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
-              onClick={() => toggleFavorite.mutate(isFavorited ? "remove" : "add")}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleFavorite.mutate(isFavorited ? "remove" : "add");
+              }}
               disabled={toggleFavorite.isPending}
-              className="rounded-full bg-panel/90 p-1.5 text-ink hover:bg-panel disabled:opacity-50"
+              className="relative z-10 rounded-full bg-panel/90 p-1.5 text-ink hover:bg-panel disabled:opacity-50"
             >
               <Heart
                 className="h-3.5 w-3.5"
@@ -89,9 +104,11 @@ export const MovieCard = memo(function MovieCard({ movie, eager = false }: Movie
             </button>
           </div>
         )}
-      </div>
+      </Link>
 
-      <p className="mt-1.5 truncate font-body text-sm text-ink">{movie.title}</p>
+      <Link to={`/movies/${movie.tmdbId}`} className="mt-1.5 block truncate font-body text-sm text-ink hover:text-amber">
+        {movie.title}
+      </Link>
       {movie.releaseYear && (
         <p className="font-mono text-xs text-ink-dim">{movie.releaseYear}</p>
       )}

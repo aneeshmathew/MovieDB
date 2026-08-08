@@ -28,6 +28,11 @@ const resolvers = {
       const { userId } = requireAuth(context);
       return Rating.findOne({ userId, movieId });
     },
+
+    myRatings: async (_parent, _args, context) => {
+      const { userId } = requireAuth(context);
+      return Rating.find({ userId }).sort({ updatedAt: -1 });
+    },
   },
 
   Mutation: {
@@ -75,6 +80,7 @@ const resolvers = {
     id: (rating) => rating._id.toString(),
     createdAt: (rating) => rating.createdAt.toISOString(),
     updatedAt: (rating) => rating.updatedAt.toISOString(),
+    movie: (rating) => moviesResolvers.getOrFetchMovie(rating.movieId),
   },
 };
 

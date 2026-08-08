@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MovieCard } from "./MovieCard";
 import { useAuthStore } from "@/store/authStore";
@@ -34,7 +35,11 @@ const loggedInUser = { id: "u1", name: "Ada", email: "a@b.com", avatar: null };
 
 function renderWithProviders(children: ReactNode) {
   const queryClient = new QueryClient();
-  return render(<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>);
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>{children}</MemoryRouter>
+    </QueryClientProvider>
+  );
 }
 
 describe("MovieCard", () => {

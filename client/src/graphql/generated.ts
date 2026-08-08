@@ -23,6 +23,11 @@ export type RegisterInput = {
   password: string;
 };
 
+export type UpdateProfileInput = {
+  avatar?: string | null | undefined;
+  name?: string | null | undefined;
+};
+
 export type RegisterMutationVariables = Exact<{
   input: RegisterInput;
 }>;
@@ -111,6 +116,34 @@ export type SearchMoviesQueryVariables = Exact<{
 
 
 export type SearchMoviesQuery = { searchMovies: Array<{ id: string, tmdbId: number, title: string, posterPath: string | null, backdropPath: string | null, releaseYear: number | null, tmdbVoteAverage: number, avgRating: number, ratingCount: number, isClassic: boolean, genres: Array<number> }> };
+
+export type UpdateProfileMutationVariables = Exact<{
+  input: UpdateProfileInput;
+}>;
+
+
+export type UpdateProfileMutation = { updateProfile: { id: string, name: string, email: string, avatar: string | null } };
+
+export type ChangeEmailMutationVariables = Exact<{
+  newEmail: string;
+  password: string;
+}>;
+
+
+export type ChangeEmailMutation = { changeEmail: { id: string, email: string } };
+
+export type ChangePasswordMutationVariables = Exact<{
+  currentPassword: string;
+  newPassword: string;
+}>;
+
+
+export type ChangePasswordMutation = { changePassword: boolean };
+
+export type MyRatingsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyRatingsQuery = { myRatings: Array<{ id: string, movieId: number, score: number, review: string | null, updatedAt: string, movie: { id: string, tmdbId: number, title: string, posterPath: string | null, backdropPath: string | null, releaseYear: number | null, tmdbVoteAverage: number, avgRating: number, ratingCount: number, isClassic: boolean, genres: Array<number> } }> };
 
 export type MyRatingQueryVariables = Exact<{
   movieId: number;
@@ -339,6 +372,43 @@ export const SearchMoviesDocument = gql`
   }
 }
     ${MovieCardFieldsFragmentDoc}`;
+export const UpdateProfileDocument = gql`
+    mutation UpdateProfile($input: UpdateProfileInput!) {
+  updateProfile(input: $input) {
+    id
+    name
+    email
+    avatar
+  }
+}
+    `;
+export const ChangeEmailDocument = gql`
+    mutation ChangeEmail($newEmail: String!, $password: String!) {
+  changeEmail(newEmail: $newEmail, password: $password) {
+    id
+    email
+  }
+}
+    `;
+export const ChangePasswordDocument = gql`
+    mutation ChangePassword($currentPassword: String!, $newPassword: String!) {
+  changePassword(currentPassword: $currentPassword, newPassword: $newPassword)
+}
+    `;
+export const MyRatingsDocument = gql`
+    query MyRatings {
+  myRatings {
+    id
+    movieId
+    score
+    review
+    updatedAt
+    movie {
+      ...MovieCardFields
+    }
+  }
+}
+    ${MovieCardFieldsFragmentDoc}`;
 export const MyRatingDocument = gql`
     query MyRating($movieId: Int!) {
   rating(movieId: $movieId) {
@@ -433,6 +503,18 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     SearchMovies(variables: SearchMoviesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<SearchMoviesQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<SearchMoviesQuery>({ document: SearchMoviesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'SearchMovies', 'query', variables);
+    },
+    UpdateProfile(variables: UpdateProfileMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateProfileMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<UpdateProfileMutation>({ document: UpdateProfileDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateProfile', 'mutation', variables);
+    },
+    ChangeEmail(variables: ChangeEmailMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ChangeEmailMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<ChangeEmailMutation>({ document: ChangeEmailDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'ChangeEmail', 'mutation', variables);
+    },
+    ChangePassword(variables: ChangePasswordMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ChangePasswordMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<ChangePasswordMutation>({ document: ChangePasswordDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'ChangePassword', 'mutation', variables);
+    },
+    MyRatings(variables?: MyRatingsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<MyRatingsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<MyRatingsQuery>({ document: MyRatingsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'MyRatings', 'query', variables);
     },
     MyRating(variables: MyRatingQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<MyRatingQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<MyRatingQuery>({ document: MyRatingDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'MyRating', 'query', variables);

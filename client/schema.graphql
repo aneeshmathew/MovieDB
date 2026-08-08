@@ -50,6 +50,7 @@ type Query {
   watchlist: [Movie!]!
   favorites: [Movie!]!
   rating(movieId: Int!): Rating
+  myRatings: [Rating!]!
   myPreferences: Preferences!
 }
 
@@ -65,6 +66,9 @@ type Mutation {
   upsertRating(movieId: Int!, score: Int!, review: String): Rating!
   deleteRating(movieId: Int!): Boolean!
   updatePreferences(input: PreferencesInput!): Preferences!
+  updateProfile(input: UpdateProfileInput!): User!
+  changeEmail(newEmail: String!, password: String!): User!
+  changePassword(currentPassword: String!, newPassword: String!): Boolean!
 }
 
 type CastMember {
@@ -109,6 +113,7 @@ type Rating {
   review: String
   createdAt: String!
   updatedAt: String!
+  movie: Movie!
 }
 
 input PreferencesInput {
@@ -116,4 +121,9 @@ input PreferencesInput {
   language: String
   adultContent: Boolean
   autoplayTrailers: Boolean
+}
+
+input UpdateProfileInput {
+  name: String
+  avatar: String
 }

@@ -50,7 +50,12 @@ export function LoginPage() {
 
         {login.isError && (
           <p role="alert" className="text-sm text-crimson">
-            {login.error instanceof Error ? login.error.message : "Couldn't log in."}
+            {/* Deliberately generic regardless of the actual server error
+                (wrong password, unknown email, network failure, etc.) —
+                surfacing the specific reason would let someone probe which
+                emails are registered, and isn't actionable for the user
+                beyond "check what you typed." */}
+            Login failed. Please check your email and password and try again.
           </p>
         )}
 
