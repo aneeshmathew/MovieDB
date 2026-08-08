@@ -17,7 +17,9 @@ Fill `server/.env` manually: `MONGO_URI`, `TMDB_ACCESS_TOKEN` (v4 Bearer token, 
 - Backend: Express + **Apollo Server 5** (not 4, was EOL) + `@as-integrations/express4` + Mongoose + Zod + JWT
 - Frontend: React 19 + TS + Vite + **Tailwind v4** (CSS-native `@theme`, no `tailwind.config.js`/PostCSS) + TanStack Query + TanStack Virtual + Zustand + react-router-dom + graphql-request + GraphQL Codegen
 - Auth: TMDB **v4 Bearer token** (`Authorization` header), not v3 `api_key` query param
-- Testing: Vitest+RTL both sides. **137 tests passing** (109 server / 28 client). No Playwright yet.
+- Testing: Vitest+RTL both sides. **149 tests passing** (113 server / 36 client). Playwright E2E suite added (NEW) — see `e2e/README.md`; not executable in this sandbox (TMDB + Playwright's browser CDN both blocked here), run locally.
+
+| Search pagination (NEW) | `typeDefs/movies.typeDefs.js`, `resolvers/movies.resolvers.js` | `searchMovies` returns `SearchResults {movies, page, totalPages, totalResults}` (was a bare `[Movie!]!`) — passes through TMDB's own pagination metadata rather than inferring "last page" from a short results array, which can legitimately happen mid-list too. Same per-`query:page` cache key as before. |
 
 ## Backend — DONE (all Phases 1-5 + profile)
 | Area | File(s) | Notes |
@@ -33,7 +35,7 @@ Fill `server/.env` manually: `MONGO_URI`, `TMDB_ACCESS_TOKEN` (v4 Bearer token, 
 | SPA serving | `app.js` (after `/graphql`) | `express.static` + history-fallback from `CLIENT_DIST_PATH` (default sibling `../../client/dist`), guarded by `fs.existsSync`. **Only works same-origin** — if frontend/backend deploy on separate origins (Vercel+Render), need a platform rewrite instead for OG previews to work. |
 | Schema pipeline | `scripts/print-schema.js`, `npm run schema:print` | Prints real schema AST → `schema.graphql`, copied into client, feeds Codegen. Not hand-written. |
 
-**GraphQL surface (current):** Query: `me, dashboard, movie, searchMovies, watchlist, favorites, myLists, list, rating, myRatings, myPreferences`. Mutation: `register, login, refresh, logout, addToWatchlist, removeFromWatchlist, addToFavorites, removeFromFavorites, createList, renameList, deleteList, addToList, removeFromList, upsertRating, deleteRating, updatePreferences, updateProfile, changeEmail, changePassword`.
+**GraphQL surface (current):** Query: `me, dashboard, movie, searchMovies, watchlist, favorites, myLists, list, rating, myRatings, myPreferences`. Mutation: `register, login, refresh, logout, addToWatchlist, removeFromWatchlist, addToFavorites, removeFromFavorites, createList, renameList, deleteList, addToList, removeFromList, upsertRating, deleteRating, updatePreferences, updateProfile, changeEmail, changePassword`. **`searchMovies` now returns `SearchResults!` (`{movies, page, totalPages, totalResults}`), not a bare `[Movie!]!`** — breaking change, made for pagination (see below).
 
 | My Lists (NEW) | `models/List.js`, `typeDefs/lists.typeDefs.js`, `resolvers/lists.resolvers.js` | `List` doc: `{owner, name, movieIds: [Int]}`, unique `(owner,name)` index. Exposed as GraphQL type `MovieList` (named to avoid clashing with GraphQL's own `[Type]` list syntax). `movieIds` returned raw for cheap membership checks; `movies` is a lazy field resolver (only hits `getOrFetchMovie` per id when selected). `addToList` is idempotent (same `$ne`-filter pattern as watchlist/favorites) — on no-op it re-fetches scoped to `{_id, owner}` to distinguish "already in list" from "not found/not yours". All queries/mutations scope directly on `{_id, owner: userId}` rather than fetch-then-check, so another user's list just doesn't match (same shape as nonexistent). Malformed `id` (Mongoose `CastError`) treated as not-found, not a 500.
 
@@ -45,7 +47,8 @@ Fill `server/.env` manually: `MONGO_URI`, `TMDB_ACCESS_TOKEN` (v4 Bearer token, 
 | Stores | `store/authStore.ts` (token in-memory only, never localStorage), `store/listsStore.ts` (watchlist/favorite id Sets, separate from auth) | |
 | Dashboard | `features/dashboard/` | Hero + 4 `MovieRow`s (TanStack Virtual, horizontal) separated by `SprocketDivider`. |
 | Movie detail | `features/movies/MovieDetailPage.tsx` (route `/movies/:tmdbId`) | Backdrop, cast, YouTube trailer embed, `StarRating` widget, watchlist/favorite toggles, **Share button (NEW)**, similar-movies row. |
-| Search | `features/movies/SearchPage.tsx` (route `/search?q=`) | Results sorted by `releaseYear` **descending, client-side** (backend returns TMDB relevance order). |
+| Search | `features/movies/SearchPage.tsx` (route `/search?q=`) | **Now infinite-scroll (NEW)**: `useInfiniteQuery` over the paginated `searchMovies`, `IntersectionObserver` sentinel triggers `fetchNextPage()`, stops once `page >= totalPages` (from TMDB, not inferred). Results still sorted by `releaseYear` **descending, client-side**, re-applied across the full accumulated set as more pages load (a deliberate trade-off — occasionally reorders visually as new pages arrive, but keeps the original sort-by-year product decision intact). |
+| Preferences (NEW) | `features/profile/PreferencesForm.tsx` (tab on `/profile`), `usePreferences.ts`, `lib/genres.ts`, `lib/languages.ts` | Genre picker uses a static hardcoded list of TMDB's 19 official movie genres (`lib/genres.ts`) rather than an extra backend round trip — that list is public and essentially never changes. Language is a curated `<select>` of common ISO codes, not exhaustive. Adult-content/autoplay are custom toggle switches (styled checkboxes, not a UI-library import). One combined "Save preferences" submit, not per-field auto-save — matches `ProfileInfoForm`'s pattern. On success, invalidates `["dashboard"]` too, since dashboard personalization reads `preferences.genres` server-side. |
 | Profile | `features/profile/` (route `/profile`, protected) | Tabs: Profile (edit name) / Reviews & Ratings (`myRatings`) / Favorites / Watchlist. Email/password change forms show **generic error messages only** — same reasoning as login. |
 | Login | `features/auth/LoginPage.tsx` | Fixed generic error message regardless of actual server response (avoid email-enumeration leak). |
 | Share button (NEW) | `components/ShareButton.tsx`, used in `MovieDetailPage.tsx` | `navigator.share` (native OS share sheet) when available, falls back to `navigator.clipboard.writeText` + "Copied!" feedback for 2s otherwise. `AbortError` (person just closed the share sheet) is swallowed, not shown as an error. Always visible regardless of login state — unlike watchlist/favorite, sharing isn't an authed action — so it now sits in a row that always renders, with watchlist/favorite buttons conditionally alongside it. |
@@ -64,16 +67,6 @@ Fill `server/.env` manually: `MONGO_URI`, `TMDB_ACCESS_TOKEN` (v4 Bearer token, 
 ## Environment constraints hit (informational, not bugs)
 - Sandbox egress blocks `api.themoviedb.org` and Playwright's browser-binary CDN (`host_not_allowed`) — can't hit live TMDB or take real screenshots from within a Claude session. Verify visually via `npm run dev` yourself.
 
-## TODO / Backlog (My Lists + Share button done — remaining, in order)
-- **Playwright E2E** (NEXT): no end-to-end suite yet (Vitest+RTL component coverage only). Suggested journeys: register→login, add/remove favorite, submit rating, search.
-- **Pagination/infinite scroll** on `SearchPage` (currently single page only).
-- **Preferences page UI**: backend `myPreferences`/`updatePreferences` exist; no frontend page yet (genre picker, language, adult-content toggle, autoplay toggle).
-
--- in details page Movie tile image is not aligned properly, Top portion is cut off, Need some more margin on the top. 
-
--- In the Dashbord add to list doesnt want a popup to create new list, Just add to My list, on click its adds to My list. 
-
-
--- In the profies page remove the option to change Name. add MyList also as a tab.
-
+## TODO / Backlog — ALL ITEMS DONE
+Original backlog (My Lists, Share button, Playwright E2E, search pagination, Preferences UI page) is complete as of this session. See sections above for what was built and where. Nothing outstanding from the original list; next steps would come from a new round of planning.
 -- Get the Repo ready for vercel deployment. Both client and server has to build and deployed. 

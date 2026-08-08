@@ -50,6 +50,11 @@ query MovieDetail($tmdbId: Int!) {
 
 query SearchMovies($query: String!, $page: Int) {
   searchMovies(query: $query, page: $page) {
-    ...MovieCardFields
+    page
+    totalPages
+    totalResults
+    movies {
+      ...MovieCardFields
+    }
   }
 }

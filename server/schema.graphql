@@ -46,7 +46,7 @@ type Query {
   me: User
   dashboard: DashboardSections!
   movie(tmdbId: Int!): Movie
-  searchMovies(query: String!, page: Int): [Movie!]!
+  searchMovies(query: String!, page: Int): SearchResults!
   watchlist: [Movie!]!
   favorites: [Movie!]!
   myLists: [MovieList!]!
@@ -111,6 +111,13 @@ type DashboardSections {
   trending: [Movie!]!
   upcoming: [Movie!]!
   classics: [Movie!]!
+}
+
+type SearchResults {
+  movies: [Movie!]!
+  page: Int!
+  totalPages: Int!
+  totalResults: Int!
 }
 
 type MovieList {

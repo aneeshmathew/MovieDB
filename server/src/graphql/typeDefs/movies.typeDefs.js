@@ -41,10 +41,17 @@ const typeDefs = gql`
     classics: [Movie!]!
   }
 
+  type SearchResults {
+    movies: [Movie!]!
+    page: Int!
+    totalPages: Int!
+    totalResults: Int!
+  }
+
   type Query {
     dashboard: DashboardSections!
     movie(tmdbId: Int!): Movie
-    searchMovies(query: String!, page: Int): [Movie!]!
+    searchMovies(query: String!, page: Int): SearchResults!
   }
 `;
 

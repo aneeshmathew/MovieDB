@@ -5,12 +5,14 @@ import { useAuthStore } from "@/store/authStore";
 import { MovieGrid } from "@/features/movies/MovieGrid";
 import { RowSkeleton } from "@/components/Skeleton";
 import { ProfileInfoForm, ChangeEmailForm, ChangePasswordForm } from "./ProfileForms";
+import { PreferencesForm } from "./PreferencesForm";
 import { ReviewsList } from "./ReviewsList";
 
-type Tab = "info" | "reviews" | "favorites" | "watchlist";
+type Tab = "info" | "preferences" | "reviews" | "favorites" | "watchlist";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "info", label: "Profile" },
+  { id: "preferences", label: "Preferences" },
   { id: "reviews", label: "Reviews & Ratings" },
   { id: "favorites", label: "Favorites" },
   { id: "watchlist", label: "Watchlist" },
@@ -88,6 +90,15 @@ export function ProfilePage() {
             <h2 className="mb-3 font-display text-lg uppercase text-ink">Password</h2>
             <ChangePasswordForm />
           </section>
+        </div>
+
+        <div
+          role="tabpanel"
+          id="panel-preferences"
+          aria-labelledby="tab-preferences"
+          hidden={activeTab !== "preferences"}
+        >
+          {activeTab === "preferences" && <PreferencesForm />}
         </div>
 
         <div

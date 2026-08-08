@@ -77,15 +77,25 @@ const resolvers = {
 
     searchMovies: async (_parent, { query, page = 1 }) => {
       const trimmed = query.trim();
-      if (!trimmed) return [];
+      if (!trimmed) return { movies: [], page: 1, totalPages: 0, totalResults: 0 };
 
-      const results = await cacheService.getOrSet(
+      return cacheService.getOrSet(
         `search:${trimmed.toLowerCase()}:${page}`,
         TTL.HOURS(1),
-        async () => upsertMovies((await tmdbService.searchMovies(trimmed, page)).results)
+        async () => {
+          const raw = await tmdbService.searchMovies(trimmed, page);
+          const movies = await upsertMovies(raw.results);
+          // TMDB's own page/total_pages/total_results, passed through so the
+          // client knows when to stop paginating without guessing from a
+          // short final page (which can legitimately happen mid-list too).
+          return {
+            movies,
+            page: raw.page,
+            totalPages: raw.total_pages,
+            totalResults: raw.total_results,
+          };
+        }
       );
-
-      return results;
     },
   },
 

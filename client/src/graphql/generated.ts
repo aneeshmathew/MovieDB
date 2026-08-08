@@ -167,7 +167,7 @@ export type SearchMoviesQueryVariables = Exact<{
 }>;
 
 
-export type SearchMoviesQuery = { searchMovies: Array<{ id: string, tmdbId: number, title: string, posterPath: string | null, backdropPath: string | null, releaseYear: number | null, tmdbVoteAverage: number, avgRating: number, ratingCount: number, isClassic: boolean, genres: Array<number> }> };
+export type SearchMoviesQuery = { searchMovies: { page: number, totalPages: number, totalResults: number, movies: Array<{ id: string, tmdbId: number, title: string, posterPath: string | null, backdropPath: string | null, releaseYear: number | null, tmdbVoteAverage: number, avgRating: number, ratingCount: number, isClassic: boolean, genres: Array<number> }> } };
 
 export type UpdateProfileMutationVariables = Exact<{
   input: UpdateProfileInput;
@@ -481,7 +481,12 @@ export const MovieDetailDocument = gql`
 export const SearchMoviesDocument = gql`
     query SearchMovies($query: String!, $page: Int) {
   searchMovies(query: $query, page: $page) {
-    ...MovieCardFields
+    page
+    totalPages
+    totalResults
+    movies {
+      ...MovieCardFields
+    }
   }
 }
     ${MovieCardFieldsFragmentDoc}`;
