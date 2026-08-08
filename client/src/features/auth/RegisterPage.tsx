@@ -68,7 +68,13 @@ export function RegisterPage() {
 
         {register.isError && (
           <p role="alert" className="text-sm text-crimson">
-            {register.error instanceof Error ? register.error.message : "Couldn't sign up."}
+            {/* Generic on purpose — mirrors the login page's reasoning:
+                don't surface the server's specific reason (e.g. exact
+                validation detail or internal error text) beyond what's
+                actionable. Field-level validation (email format, password
+                length) is still caught by the input's own `required`/
+                `minLength` before this ever fires. */}
+            Couldn't create your account. Please check your details and try again.
           </p>
         )}
 

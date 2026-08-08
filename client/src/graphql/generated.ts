@@ -95,6 +95,58 @@ export type RemoveFromFavoritesMutationVariables = Exact<{
 
 export type RemoveFromFavoritesMutation = { removeFromFavorites: Array<{ id: string, tmdbId: number, title: string, posterPath: string | null, backdropPath: string | null, releaseYear: number | null, tmdbVoteAverage: number, avgRating: number, ratingCount: number, isClassic: boolean, genres: Array<number> }> };
 
+export type MovieListFieldsFragment = { id: string, name: string, movieIds: Array<number>, movieCount: number, createdAt: string, updatedAt: string };
+
+export type MyListsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyListsQuery = { myLists: Array<{ id: string, name: string, movieIds: Array<number>, movieCount: number, createdAt: string, updatedAt: string }> };
+
+export type ListDetailQueryVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type ListDetailQuery = { list: { id: string, name: string, movieIds: Array<number>, movieCount: number, createdAt: string, updatedAt: string, movies: Array<{ id: string, tmdbId: number, title: string, posterPath: string | null, backdropPath: string | null, releaseYear: number | null, tmdbVoteAverage: number, avgRating: number, ratingCount: number, isClassic: boolean, genres: Array<number> }> } | null };
+
+export type CreateListMutationVariables = Exact<{
+  name: string;
+}>;
+
+
+export type CreateListMutation = { createList: { id: string, name: string, movieIds: Array<number>, movieCount: number, createdAt: string, updatedAt: string } };
+
+export type RenameListMutationVariables = Exact<{
+  id: string | number;
+  name: string;
+}>;
+
+
+export type RenameListMutation = { renameList: { id: string, name: string, movieIds: Array<number>, movieCount: number, createdAt: string, updatedAt: string } };
+
+export type DeleteListMutationVariables = Exact<{
+  id: string | number;
+}>;
+
+
+export type DeleteListMutation = { deleteList: boolean };
+
+export type AddToListMutationVariables = Exact<{
+  id: string | number;
+  movieId: number;
+}>;
+
+
+export type AddToListMutation = { addToList: { id: string, name: string, movieIds: Array<number>, movieCount: number, createdAt: string, updatedAt: string } };
+
+export type RemoveFromListMutationVariables = Exact<{
+  id: string | number;
+  movieId: number;
+}>;
+
+
+export type RemoveFromListMutation = { removeFromList: { id: string, name: string, movieIds: Array<number>, movieCount: number, createdAt: string, updatedAt: string } };
+
 export type MovieCardFieldsFragment = { id: string, tmdbId: number, title: string, posterPath: string | null, backdropPath: string | null, releaseYear: number | null, tmdbVoteAverage: number, avgRating: number, ratingCount: number, isClassic: boolean, genres: Array<number> };
 
 export type DashboardQueryVariables = Exact<{ [key: string]: never; }>;
@@ -180,6 +232,16 @@ export type UpdatePreferencesMutationVariables = Exact<{
 
 export type UpdatePreferencesMutation = { updatePreferences: { genres: Array<number>, language: string, adultContent: boolean, autoplayTrailers: boolean } };
 
+export const MovieListFieldsFragmentDoc = gql`
+    fragment MovieListFields on MovieList {
+  id
+  name
+  movieIds
+  movieCount
+  createdAt
+  updatedAt
+}
+    `;
 export const MovieCardFieldsFragmentDoc = gql`
     fragment MovieCardFields on Movie {
   id
@@ -327,6 +389,57 @@ export const RemoveFromFavoritesDocument = gql`
   }
 }
     ${MovieCardFieldsFragmentDoc}`;
+export const MyListsDocument = gql`
+    query MyLists {
+  myLists {
+    ...MovieListFields
+  }
+}
+    ${MovieListFieldsFragmentDoc}`;
+export const ListDetailDocument = gql`
+    query ListDetail($id: ID!) {
+  list(id: $id) {
+    ...MovieListFields
+    movies {
+      ...MovieCardFields
+    }
+  }
+}
+    ${MovieListFieldsFragmentDoc}
+${MovieCardFieldsFragmentDoc}`;
+export const CreateListDocument = gql`
+    mutation CreateList($name: String!) {
+  createList(name: $name) {
+    ...MovieListFields
+  }
+}
+    ${MovieListFieldsFragmentDoc}`;
+export const RenameListDocument = gql`
+    mutation RenameList($id: ID!, $name: String!) {
+  renameList(id: $id, name: $name) {
+    ...MovieListFields
+  }
+}
+    ${MovieListFieldsFragmentDoc}`;
+export const DeleteListDocument = gql`
+    mutation DeleteList($id: ID!) {
+  deleteList(id: $id)
+}
+    `;
+export const AddToListDocument = gql`
+    mutation AddToList($id: ID!, $movieId: Int!) {
+  addToList(id: $id, movieId: $movieId) {
+    ...MovieListFields
+  }
+}
+    ${MovieListFieldsFragmentDoc}`;
+export const RemoveFromListDocument = gql`
+    mutation RemoveFromList($id: ID!, $movieId: Int!) {
+  removeFromList(id: $id, movieId: $movieId) {
+    ...MovieListFields
+  }
+}
+    ${MovieListFieldsFragmentDoc}`;
 export const DashboardDocument = gql`
     query Dashboard {
   dashboard {
@@ -494,6 +607,27 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     RemoveFromFavorites(variables: RemoveFromFavoritesMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<RemoveFromFavoritesMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<RemoveFromFavoritesMutation>({ document: RemoveFromFavoritesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'RemoveFromFavorites', 'mutation', variables);
+    },
+    MyLists(variables?: MyListsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<MyListsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<MyListsQuery>({ document: MyListsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'MyLists', 'query', variables);
+    },
+    ListDetail(variables: ListDetailQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ListDetailQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<ListDetailQuery>({ document: ListDetailDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'ListDetail', 'query', variables);
+    },
+    CreateList(variables: CreateListMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CreateListMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<CreateListMutation>({ document: CreateListDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CreateList', 'mutation', variables);
+    },
+    RenameList(variables: RenameListMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<RenameListMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<RenameListMutation>({ document: RenameListDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'RenameList', 'mutation', variables);
+    },
+    DeleteList(variables: DeleteListMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<DeleteListMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<DeleteListMutation>({ document: DeleteListDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'DeleteList', 'mutation', variables);
+    },
+    AddToList(variables: AddToListMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<AddToListMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<AddToListMutation>({ document: AddToListDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'AddToList', 'mutation', variables);
+    },
+    RemoveFromList(variables: RemoveFromListMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<RemoveFromListMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<RemoveFromListMutation>({ document: RemoveFromListDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'RemoveFromList', 'mutation', variables);
     },
     Dashboard(variables?: DashboardQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<DashboardQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<DashboardQuery>({ document: DashboardDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'Dashboard', 'query', variables);

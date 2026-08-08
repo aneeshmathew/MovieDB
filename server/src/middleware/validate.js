@@ -25,6 +25,10 @@ const preferencesSchema = z.object({
   autoplayTrailers: z.boolean().optional(),
 });
 
+const listNameSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(100),
+});
+
 const updateProfileSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100).optional(),
   avatar: z.string().trim().url("Avatar must be a valid URL").optional().nullable(),
@@ -58,6 +62,7 @@ module.exports = {
   loginSchema,
   ratingSchema,
   preferencesSchema,
+  listNameSchema,
   updateProfileSchema,
   changeEmailSchema,
   changePasswordSchema,

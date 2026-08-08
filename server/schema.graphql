@@ -49,6 +49,8 @@ type Query {
   searchMovies(query: String!, page: Int): [Movie!]!
   watchlist: [Movie!]!
   favorites: [Movie!]!
+  myLists: [MovieList!]!
+  list(id: ID!): MovieList
   rating(movieId: Int!): Rating
   myRatings: [Rating!]!
   myPreferences: Preferences!
@@ -63,6 +65,11 @@ type Mutation {
   removeFromWatchlist(movieId: Int!): [Movie!]!
   addToFavorites(movieId: Int!): [Movie!]!
   removeFromFavorites(movieId: Int!): [Movie!]!
+  createList(name: String!): MovieList!
+  renameList(id: ID!, name: String!): MovieList!
+  deleteList(id: ID!): Boolean!
+  addToList(id: ID!, movieId: Int!): MovieList!
+  removeFromList(id: ID!, movieId: Int!): MovieList!
   upsertRating(movieId: Int!, score: Int!, review: String): Rating!
   deleteRating(movieId: Int!): Boolean!
   updatePreferences(input: PreferencesInput!): Preferences!
@@ -104,6 +111,16 @@ type DashboardSections {
   trending: [Movie!]!
   upcoming: [Movie!]!
   classics: [Movie!]!
+}
+
+type MovieList {
+  id: ID!
+  name: String!
+  movieIds: [Int!]!
+  movieCount: Int!
+  movies: [Movie!]!
+  createdAt: String!
+  updatedAt: String!
 }
 
 type Rating {

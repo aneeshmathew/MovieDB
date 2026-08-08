@@ -1,0 +1,51 @@
+fragment MovieListFields on MovieList {
+  id
+  name
+  movieIds
+  movieCount
+  createdAt
+  updatedAt
+}
+
+query MyLists {
+  myLists {
+    ...MovieListFields
+  }
+}
+
+query ListDetail($id: ID!) {
+  list(id: $id) {
+    ...MovieListFields
+    movies {
+      ...MovieCardFields
+    }
+  }
+}
+
+mutation CreateList($name: String!) {
+  createList(name: $name) {
+    ...MovieListFields
+  }
+}
+
+mutation RenameList($id: ID!, $name: String!) {
+  renameList(id: $id, name: $name) {
+    ...MovieListFields
+  }
+}
+
+mutation DeleteList($id: ID!) {
+  deleteList(id: $id)
+}
+
+mutation AddToList($id: ID!, $movieId: Int!) {
+  addToList(id: $id, movieId: $movieId) {
+    ...MovieListFields
+  }
+}
+
+mutation RemoveFromList($id: ID!, $movieId: Int!) {
+  removeFromList(id: $id, movieId: $movieId) {
+    ...MovieListFields
+  }
+}

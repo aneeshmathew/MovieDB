@@ -14,6 +14,12 @@ vi.mock("@/lib/graphqlClient", () => ({
     RemoveFromWatchlist: vi.fn().mockResolvedValue({ removeFromWatchlist: [] }),
     AddToFavorites: vi.fn().mockResolvedValue({ addToFavorites: [] }),
     RemoveFromFavorites: vi.fn().mockResolvedValue({ removeFromFavorites: [] }),
+    // AddToListMenu (rendered inside MovieCard for logged-in users) fetches
+    // the user's lists to populate its popover.
+    MyLists: vi.fn().mockResolvedValue({ myLists: [] }),
+    CreateList: vi.fn(),
+    AddToList: vi.fn(),
+    RemoveFromList: vi.fn(),
   },
 }));
 

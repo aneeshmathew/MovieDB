@@ -5,7 +5,7 @@ import { SprocketDivider } from "@/components/SprocketDivider";
 import { HeroSkeleton, RowSkeleton } from "@/components/Skeleton";
 
 export function DashboardPage() {
-  const { data, isLoading, isError, error, refetch } = useDashboard();
+  const { data, isLoading, isError, refetch } = useDashboard();
 
   if (isLoading) {
     return (
@@ -22,7 +22,7 @@ export function DashboardPage() {
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
         <p className="font-display text-xl uppercase text-ink">Projector jammed</p>
         <p className="max-w-sm text-sm text-ink-dim">
-          {error instanceof Error ? error.message : "Something went wrong loading the dashboard."}
+          Something went wrong loading the dashboard.
         </p>
         <button
           type="button"

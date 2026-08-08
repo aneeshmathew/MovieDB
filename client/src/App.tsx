@@ -24,6 +24,12 @@ const WatchlistPage = lazy(() =>
 const FavoritesPage = lazy(() =>
   import("@/features/movies/FavoritesPage").then((m) => ({ default: m.FavoritesPage }))
 );
+const ListsPage = lazy(() =>
+  import("@/features/movies/ListsPage").then((m) => ({ default: m.ListsPage }))
+);
+const ListDetailPage = lazy(() =>
+  import("@/features/movies/ListDetailPage").then((m) => ({ default: m.ListDetailPage }))
+);
 const MovieDetailPage = lazy(() =>
   import("@/features/movies/MovieDetailPage").then((m) => ({ default: m.MovieDetailPage }))
 );
@@ -43,13 +49,12 @@ function RouteFallback() {
   );
 }
 
-function ErrorFallback({
-  error,
-  resetErrorBoundary,
-}: {
-  error: unknown;
-  resetErrorBoundary: () => void;
-}) {
+function ErrorFallback({ resetErrorBoundary }: { resetErrorBoundary: () => void }) {
+  // Deliberately never renders the actual error message — this boundary
+  // catches everything from GraphQL failures to chunk-load errors, and the
+  // latter's message literally contains a source file path
+  // ("Failed to fetch dynamically imported module: /src/features/...").
+  // Real errors are still visible in the browser console for debugging.
   return (
     <div
       role="alert"
@@ -57,7 +62,7 @@ function ErrorFallback({
     >
       <p className="font-display text-xl uppercase text-ink">Reel snapped</p>
       <p className="max-w-sm text-sm text-ink-dim">
-        {error instanceof Error ? error.message : "Something went wrong."}
+        Something went wrong loading this page.
       </p>
       <button
         type="button"
@@ -100,6 +105,8 @@ export function App() {
               <Route element={<ProtectedRoute />}>
                 <Route path="/watchlist" element={<WatchlistPage />} />
                 <Route path="/favorites" element={<FavoritesPage />} />
+                <Route path="/lists" element={<ListsPage />} />
+                <Route path="/lists/:id" element={<ListDetailPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
               </Route>
             </Routes>

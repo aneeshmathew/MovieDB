@@ -41,6 +41,9 @@ export function Navbar() {
             <NavLink to="/favorites" className={navLinkClass}>
               Favorites
             </NavLink>
+            <NavLink to="/lists" className={navLinkClass}>
+              My Lists
+            </NavLink>
           </>
         )}
       </nav>
