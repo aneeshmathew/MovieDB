@@ -1,7 +1,11 @@
 node_modules/
 dist/
-.env
 *.log
 coverage/
 schema.graphql
 .DS_Store
+
+# Environment files
+.env
+server/.env
+client/.env

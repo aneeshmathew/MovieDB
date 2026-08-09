@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { useListDetail } from "./useMovieLists";
 import { MovieGrid } from "./MovieGrid";
+import { AddMoviesToListSearch } from "./AddMoviesToListSearch";
 import { RowSkeleton } from "@/components/Skeleton";
 
 export function ListDetailPage() {
@@ -21,6 +22,12 @@ export function ListDetailPage() {
         <h1 className="mt-2 font-display text-2xl uppercase text-ink">
           {list?.name ?? (isLoading ? "" : "List not found")}
         </h1>
+
+        {list && (
+          <div className="mt-4 max-w-md">
+            <AddMoviesToListSearch listId={list.id} movieIds={list.movieIds} />
+          </div>
+        )}
       </div>
 
       {isLoading ? (
@@ -29,7 +36,9 @@ export function ListDetailPage() {
         <MovieGrid
           movies={list?.movies ?? []}
           emptyMessage={
-            list ? "Nothing in this list yet — use the list icon on a movie card to add one." : "This list doesn't exist, or isn't yours."
+            list
+              ? "Nothing in this list yet — search above to add a movie."
+              : "This list doesn't exist, or isn't yours."
           }
         />
       )}
