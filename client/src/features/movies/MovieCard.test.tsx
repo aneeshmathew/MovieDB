@@ -14,8 +14,9 @@ vi.mock("@/lib/graphqlClient", () => ({
     RemoveFromWatchlist: vi.fn().mockResolvedValue({ removeFromWatchlist: [] }),
     AddToFavorites: vi.fn().mockResolvedValue({ addToFavorites: [] }),
     RemoveFromFavorites: vi.fn().mockResolvedValue({ removeFromFavorites: [] }),
-    // AddToListMenu (rendered inside MovieCard for logged-in users) fetches
-    // the user's lists to populate its popover.
+    // QuickAddToListButton (rendered inside MovieCard for logged-in users)
+    // reads the user's lists to know whether this movie is already in the
+    // default "My List".
     MyLists: vi.fn().mockResolvedValue({ myLists: [] }),
     CreateList: vi.fn(),
     AddToList: vi.fn(),
@@ -119,5 +120,47 @@ describe("MovieCard", () => {
     renderWithProviders(<MovieCard movie={{ ...baseMovie, posterPath: null }} />);
     expect(screen.queryByAltText("The Shawshank Redemption poster")).not.toBeInTheDocument();
     expect(screen.getAllByText("The Shawshank Redemption").length).toBeGreaterThan(0);
+  });
+
+  it("clicking 'Add to My List' creates the default list on first use and adds the movie", async () => {
+    const { sdk } = await import("@/lib/graphqlClient");
+    (sdk.CreateList as ReturnType<typeof vi.fn>).mockResolvedValue({
+      createList: { id: "list1", name: "My List", movieIds: [], movieCount: 0 },
+    });
+    (sdk.AddToList as ReturnType<typeof vi.fn>).mockResolvedValue({
+      addToList: { id: "list1", name: "My List", movieIds: [278], movieCount: 1 },
+    });
+    useAuthStore.setState({ accessToken: "token", user: loggedInUser, hasCheckedSession: true });
+
+    renderWithProviders(<MovieCard movie={baseMovie} />);
+    await userEvent.click(screen.getByLabelText("Add to My List"));
+
+    await waitFor(() => expect(sdk.CreateList).toHaveBeenCalledWith({ name: "My List" }));
+    await waitFor(() =>
+      expect(sdk.AddToList).toHaveBeenCalledWith({ id: "list1", movieId: 278 })
+    );
+  });
+
+  it("clicking again on a movie already in My List removes it, without creating a new list", async () => {
+    const { sdk } = await import("@/lib/graphqlClient");
+    (sdk.MyLists as ReturnType<typeof vi.fn>).mockResolvedValue({
+      myLists: [{ id: "list1", name: "My List", movieIds: [278], movieCount: 1 }],
+    });
+    (sdk.RemoveFromList as ReturnType<typeof vi.fn>).mockResolvedValue({
+      removeFromList: { id: "list1", name: "My List", movieIds: [], movieCount: 0 },
+    });
+    useAuthStore.setState({ accessToken: "token", user: loggedInUser, hasCheckedSession: true });
+
+    renderWithProviders(<MovieCard movie={baseMovie} />);
+    await waitFor(() =>
+      expect(screen.getByLabelText("Remove from My List")).toBeInTheDocument()
+    );
+
+    await userEvent.click(screen.getByLabelText("Remove from My List"));
+
+    await waitFor(() =>
+      expect(sdk.RemoveFromList).toHaveBeenCalledWith({ id: "list1", movieId: 278 })
+    );
+    expect(sdk.CreateList).not.toHaveBeenCalled();
   });
 });

@@ -3,16 +3,18 @@ import { useQuery } from "@tanstack/react-query";
 import { sdk } from "@/lib/graphqlClient";
 import { useAuthStore } from "@/store/authStore";
 import { MovieGrid } from "@/features/movies/MovieGrid";
+import { ListsPage } from "@/features/movies/ListsPage";
 import { RowSkeleton } from "@/components/Skeleton";
-import { ProfileInfoForm, ChangeEmailForm, ChangePasswordForm } from "./ProfileForms";
+import { ChangeEmailForm, ChangePasswordForm } from "./ProfileForms";
 import { PreferencesForm } from "./PreferencesForm";
 import { ReviewsList } from "./ReviewsList";
 
-type Tab = "info" | "preferences" | "reviews" | "favorites" | "watchlist";
+type Tab = "info" | "preferences" | "mylists" | "reviews" | "favorites" | "watchlist";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "info", label: "Profile" },
   { id: "preferences", label: "Preferences" },
+  { id: "mylists", label: "My Lists" },
   { id: "reviews", label: "Reviews & Ratings" },
   { id: "favorites", label: "Favorites" },
   { id: "watchlist", label: "Watchlist" },
@@ -48,7 +50,7 @@ export function ProfilePage() {
       <div
         role="tablist"
         aria-label="Profile sections"
-        className="mt-6 flex gap-1 border-b border-line"
+        className="mt-6 flex flex-wrap gap-1 border-b border-line"
       >
         {TABS.map((tab) => (
           <button
@@ -78,10 +80,7 @@ export function ProfilePage() {
           hidden={activeTab !== "info"}
           className="flex flex-col gap-8"
         >
-          <section>
-            <h2 className="mb-3 font-display text-lg uppercase text-ink">Profile</h2>
-            <ProfileInfoForm />
-          </section>
+          {/* Name is fixed at registration — no edit UI here by design. */}
           <section>
             <h2 className="mb-3 font-display text-lg uppercase text-ink">Email</h2>
             <ChangeEmailForm />
@@ -99,6 +98,16 @@ export function ProfilePage() {
           hidden={activeTab !== "preferences"}
         >
           {activeTab === "preferences" && <PreferencesForm />}
+        </div>
+
+        <div
+          role="tabpanel"
+          id="panel-mylists"
+          aria-labelledby="tab-mylists"
+          hidden={activeTab !== "mylists"}
+          className="-mx-4 sm:-mx-8"
+        >
+          {activeTab === "mylists" && <ListsPage />}
         </div>
 
         <div

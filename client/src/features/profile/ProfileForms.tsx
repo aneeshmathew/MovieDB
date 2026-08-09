@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useAuthStore } from "@/store/authStore";
-import { useUpdateProfile, useChangeEmail, useChangePassword } from "./useProfile";
+import { useChangeEmail, useChangePassword } from "./useProfile";
 
 function FieldError({ message }: { message: string | null }) {
   if (!message) return null;
@@ -14,48 +14,6 @@ function FieldError({ message }: { message: string | null }) {
 function SuccessNote({ message }: { message: string | null }) {
   if (!message) return null;
   return <p className="mt-1 text-xs text-amber">{message}</p>;
-}
-
-export function ProfileInfoForm() {
-  const user = useAuthStore((s) => s.user);
-  const [name, setName] = useState(user?.name ?? "");
-  const updateProfile = useUpdateProfile();
-
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    updateProfile.mutate({ name });
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="flex max-w-sm flex-col gap-3">
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="profile-name" className="font-mono text-xs uppercase text-ink-dim">
-          Name
-        </label>
-        <input
-          id="profile-name"
-          type="text"
-          required
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="rounded border border-line bg-panel px-3 py-2 text-ink focus-visible:border-amber"
-        />
-      </div>
-
-      <FieldError
-        message={updateProfile.isError ? "Couldn't update your profile. Please try again." : null}
-      />
-      <SuccessNote message={updateProfile.isSuccess ? "Profile updated." : null} />
-
-      <button
-        type="submit"
-        disabled={updateProfile.isPending}
-        className="mt-1 self-start rounded-full bg-amber px-4 py-2 font-mono text-sm uppercase tracking-wide text-void disabled:opacity-50"
-      >
-        {updateProfile.isPending ? "Saving…" : "Save name"}
-      </button>
-    </form>
-  );
 }
 
 export function ChangeEmailForm() {

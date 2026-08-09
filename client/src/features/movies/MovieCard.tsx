@@ -5,7 +5,7 @@ import { posterUrl } from "@/lib/tmdbImage";
 import { useListsStore } from "@/store/listsStore";
 import { useAuthStore } from "@/store/authStore";
 import { useToggleWatchlist, useToggleFavorite } from "./useListMutations";
-import { AddToListMenu } from "./AddToListMenu";
+import { QuickAddToListButton } from "./QuickAddToListButton";
 import type { MovieCardFieldsFragment } from "@/graphql/generated";
 
 interface MovieCardProps {
@@ -103,7 +103,7 @@ export const MovieCard = memo(function MovieCard({ movie, eager = false }: Movie
                 aria-hidden="true"
               />
             </button>
-            <AddToListMenu movieId={movie.tmdbId} />
+            <QuickAddToListButton movieId={movie.tmdbId} />
           </div>
         )}
       </Link>

@@ -124,3 +124,57 @@ export function useToggleListMembership(listId: string, movieId: number) {
     },
   });
 }
+
+// Name of the single default list used by the quick-add button on
+// MovieCard (dashboard, search, watchlist/favorites grids, etc.) — a
+// plain toggle like watchlist/favorite, not the full multi-list picker.
+// Full multi-list management (create/rename/delete/choose-a-list) still
+// lives on the My Lists page for people who want it.
+export const DEFAULT_LIST_NAME = "My List";
+
+// One-click add/remove against that single default list, creating it the
+// first time it's needed rather than requiring the person to create it
+// themselves first.
+export function useQuickAddToMyList(movieId: number) {
+  const { data: lists, isLoading } = useMyLists();
+  const queryClient = useQueryClient();
+
+  const myList = lists?.find((l) => l.name === DEFAULT_LIST_NAME);
+  const inMyList = myList ? myList.movieIds.includes(movieId) : false;
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      // Re-reads from the cache at call time (not the `myList` captured in
+      // this render's closure) — same reasoning as the explicit-action
+      // pattern above: avoids acting on a stale membership snapshot if
+      // this fires right after another update.
+      async function findOrCreateMyList(): Promise<MovieListFieldsFragment> {
+        const existing = queryClient
+          .getQueryData<MovieListFieldsFragment[]>(["myLists"])
+          ?.find((l) => l.name === DEFAULT_LIST_NAME);
+        if (existing) return existing;
+        return sdk.CreateList({ name: DEFAULT_LIST_NAME }).then((r) => r.createList);
+      }
+
+      const list = await findOrCreateMyList();
+
+      if (list.movieIds.includes(movieId)) {
+        return sdk.RemoveFromList({ id: list.id, movieId }).then((r) => r.removeFromList);
+      }
+      return sdk.AddToList({ id: list.id, movieId }).then((r) => r.addToList);
+    },
+    onSuccess: (list) => {
+      queryClient.setQueryData<MovieListFieldsFragment[]>(["myLists"], (prev) =>
+        prev ? upsertList(prev, list) : [list]
+      );
+    },
+  });
+
+  return {
+    inMyList,
+    isLoading,
+    isPending: mutation.isPending,
+    isError: mutation.isError,
+    toggle: () => mutation.mutate(),
+  };
+}

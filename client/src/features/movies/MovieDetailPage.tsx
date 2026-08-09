@@ -77,7 +77,7 @@ export function MovieDetailPage() {
           <img
             src={poster}
             alt={`${movie.title} poster`}
-            className="aspect-[2/3] w-40 shrink-0 -mt-16 rounded-md object-cover ring-1 ring-line sm:-mt-24 sm:w-56"
+            className="aspect-[2/3] w-40 shrink-0 -mt-8 rounded-md object-cover ring-1 ring-line sm:-mt-12 sm:w-56 translate-y-[4px]"
           />
         )}
 
