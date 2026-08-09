@@ -9,10 +9,16 @@ const {
 } = require("../../services/token.service");
 
 const REFRESH_COOKIE_NAME = "moviedb_refresh";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax",
+  secure: IS_PRODUCTION,
+  // "None" is required for the cookie to be sent on cross-origin
+  // credentialed requests — client and server deploy to separate domains
+  // (e.g. separate Vercel projects), so this isn't a same-site request.
+  // Browsers require Secure whenever SameSite=None, hence tying both to
+  // the same flag. "Lax" is kept for local dev (http://localhost, no TLS).
+  sameSite: IS_PRODUCTION ? "none" : "lax",
   path: "/graphql", // scoped to the API endpoint, not the whole domain
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days — keep in sync with JWT_REFRESH_EXPIRES
 };

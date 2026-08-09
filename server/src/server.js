@@ -3,7 +3,13 @@ const connectDB = require("./config/db");
 const createApp = require("./app");
 
 async function main() {
-  await connectDB();
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error("❌ MongoDB connection failed:", err.message);
+    process.exit(1);
+  }
+
   const app = await createApp();
 
   app.listen(env.PORT, () => {

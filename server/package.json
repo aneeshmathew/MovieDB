@@ -4,6 +4,9 @@
   "description": "MovieDB backend — Express + Apollo Server (GraphQL) + MongoDB",
   "type": "commonjs",
   "main": "src/server.js",
+  "engines": {
+    "node": ">=18.18.0"
+  },
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",

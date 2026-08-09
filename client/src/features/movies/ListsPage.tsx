@@ -2,11 +2,13 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { useMyLists, useCreateList, useRenameList, useDeleteList } from "./useMovieLists";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { RowSkeleton } from "@/components/Skeleton";
 import type { MovieListFieldsFragment } from "@/graphql/generated";
 
 function ListCard({ list }: { list: MovieListFieldsFragment }) {
   const [editing, setEditing] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [name, setName] = useState(list.name);
   const renameList = useRenameList();
   const deleteList = useDeleteList();
@@ -19,11 +21,6 @@ function ListCard({ list }: { list: MovieListFieldsFragment }) {
       return;
     }
     renameList.mutate({ id: list.id, name: trimmed }, { onSuccess: () => setEditing(false) });
-  }
-
-  function handleDelete() {
-    if (!window.confirm(`Delete "${list.name}"? This can't be undone.`)) return;
-    deleteList.mutate(list.id);
   }
 
   return (
@@ -84,7 +81,7 @@ function ListCard({ list }: { list: MovieListFieldsFragment }) {
             </button>
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={() => setConfirmingDelete(true)}
               disabled={deleteList.isPending}
               aria-label={`Delete ${list.name}`}
               className="rounded p-1 text-ink-dim hover:text-crimson disabled:opacity-50"
@@ -94,6 +91,19 @@ function ListCard({ list }: { list: MovieListFieldsFragment }) {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        title={`Delete "${list.name}"?`}
+        description="This can't be undone."
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => {
+          setConfirmingDelete(false);
+          deleteList.mutate(list.id);
+        }}
+        onCancel={() => setConfirmingDelete(false)}
+      />
     </div>
   );
 }
