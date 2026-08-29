@@ -1,28 +1,30 @@
 # MovieDB
 
-A Netflix-style movie database app: browse, search, rate, and organize movies into custom
-lists. GraphQL backend (`server/`) backed by MongoDB and TMDB, React frontend (`client/`).
+MovieDB is a Netflix-style cinematic discovery application designed for film enthusiasts. It provides an immersive interface to browse, search, rate, and curate movies into personalized custom lists, merging a rich streaming-platform user experience with a powerful external data pipeline.
 
-## Features
+Core Features
 
-- **Browse** — dashboard with New Releases, Trending, Upcoming, and Classics rows, personalized
-  by your favorite genres (set in Preferences)
-- **Search** — infinite-scroll results, sorted by release year
-- **Movie details** — cast, trailer, similar movies, community + your own rating, native share
-  (Web Share API with a clipboard-copy fallback)
-- **Auth** — register/login with httpOnly refresh-token cookies and silent access-token refresh
-- **Watchlist & Favorites** — one-click toggles from any movie card or the detail page
-- **My Lists** — create any number of named lists. A quick-add button on every card toggles one
-  default list ("My List"); building out any other list happens via search-and-add on that
-  list's own page
-- **Ratings & reviews** — star ratings with an optional written review, editable, shown on your
-  profile
-- **Profile** — tabs for account settings (email/password), preferences, My Lists, reviews,
-  favorites, and watchlist
-- **Preferences** — favorite genres (personalizes the dashboard), language, adult-content and
-  autoplay-trailer toggles
-- **Open Graph previews** — a crawler-detecting route serves proper OG meta tags for movie links
-  shared on Slack/Twitter/iMessage/etc. (same-origin deployments only — see `DEPLOYMENT.md`)
+    Cinematic Browse & Search: Explore expansive media catalogs with fluid search capabilities, trending lists, and high-resolution visual previews.
+
+    Rating & Custom Organization: Rate films, build tailored watchlists, and manage custom category lists to organize favorite titles.
+
+    Rich Metadata Integration: Leverages comprehensive external data to deliver accurate cast information, summaries, and release metrics.
+
+Technology Stack
+
+    Frontend: React for building a dynamic, responsive single-page application optimized for media consumption.
+
+    Backend: GraphQL server architecture located in server/ for precise, efficient data querying and mutation handling.
+
+    Database & APIs: MongoDB for persistent storage of user profiles and custom lists, integrated with the TMDB (The Movie Database) API for extensive movie metadata.
+
+Engineering Highlights
+
+    Decoupled full-stack architecture with a distinct separation between the client/ React app and the server/ GraphQL backend.
+
+    Optimized data fetching strategies utilizing GraphQL to request only the specific movie details and metadata needed, reducing network overhead.
+
+    Scalable schema design capable of mapping user accounts and custom lists to dynamic external database identifiers.
 
 ## Tech stack
 
