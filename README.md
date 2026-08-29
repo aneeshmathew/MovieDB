@@ -1,6 +1,6 @@
 # MovieDB
 
-MovieDB is a Netflix-style cinematic discovery application designed for film enthusiasts. It provides an immersive interface to browse, search, rate, and curate movies into personalized custom lists, merging a rich streaming-platform user experience with a powerful external data pipeline.
+MovieDB is a CineGallery-style cinematic discovery application designed for film enthusiasts. It provides an immersive interface to browse, search, rate, and curate movies into personalized custom lists, merging a rich streaming-platform user experience with a powerful external data pipeline.
 
 Core Features
 
