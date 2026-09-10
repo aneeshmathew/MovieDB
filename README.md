@@ -16,7 +16,8 @@ Technology Stack
 
     Backend: GraphQL server architecture located in server/ for precise, efficient data querying and mutation handling.
 
-    Database & APIs: MongoDB for persistent storage of user profiles and custom lists, integrated with the TMDB (The Movie Database) API for extensive movie metadata.
+    Database & APIs: MongoDB for persistent storage of user profiles and custom lists, integrated with the TMDB 
+    (The Movie Database) API for extensive movie metadata.
 
 Engineering Highlights
 
