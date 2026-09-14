@@ -1,11 +1,14 @@
 node_modules/
 dist/
+.env
 *.log
 coverage/
+.vercel
+
+# Playwright (e2e)
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
 schema.graphql
 .DS_Store
-
-# Environment files
-.env
-server/.env
-client/.env
