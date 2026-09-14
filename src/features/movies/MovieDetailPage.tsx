@@ -56,7 +56,11 @@ export function MovieDetailPage() {
 
   const backdrop = backdropUrl(movie.backdropPath, "w1280");
   const poster = posterUrl(movie.posterPath, "w500");
-  const communityRating = movie.ratingCount > 0 ? movie.avgRating : movie.tmdbVoteAverage;
+  // The movie's own rating (from TMDB) — always shown as-is, independent of
+  // what any individual user (including the signed-in viewer) rates it.
+  // Personal ratings live only in the "YOUR RATING" section below and are
+  // never mixed into this number.
+  const movieRating = movie.tmdbVoteAverage;
 
   return (
     <div>
@@ -87,11 +91,10 @@ export function MovieDetailPage() {
           <div className="mt-2 flex flex-wrap items-center gap-3 font-mono text-sm text-ink-dim">
             {movie.releaseYear && <span>{movie.releaseYear}</span>}
             {movie.runtime && <span>{movie.runtime} min</span>}
-            {communityRating > 0 && (
+            {movieRating > 0 && (
               <span className="flex items-center gap-1">
-                <StarRating value={Math.round(communityRating)} readOnly size="sm" />(
-                {communityRating.toFixed(1)}, {movie.ratingCount} rating
-                {movie.ratingCount === 1 ? "" : "s"})
+                <StarRating value={Math.round(movieRating / 2)} readOnly size="sm" />(
+                {movieRating.toFixed(1)})
               </span>
             )}
             {movie.isClassic && <span className="uppercase text-amber">Classic</span>}

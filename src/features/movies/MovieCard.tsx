@@ -25,7 +25,10 @@ export const MovieCard = memo(function MovieCard({ movie, eager = false }: Movie
   const toggleFavorite = useToggleFavorite(movie.tmdbId);
 
   const poster = posterUrl(movie.posterPath, "w200");
-  const rating = movie.ratingCount > 0 ? movie.avgRating : movie.tmdbVoteAverage;
+  // Always the movie's own (TMDB) rating — never a personal or community
+  // rating, so one person's star rating can't change what everyone else
+  // sees as "the" rating for the movie.
+  const rating = movie.tmdbVoteAverage;
 
   return (
     <div className="group relative w-40 shrink-0 sm:w-44">
